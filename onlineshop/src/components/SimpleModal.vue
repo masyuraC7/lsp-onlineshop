@@ -29,7 +29,7 @@
             v-for="(btn, i) in buttons"
             :key="i"
             :class="['btn', btn.class || 'btn-secondary']"
-            @click="btn.action"
+            @click="handleAction(btn)"
             :data-bs-dismiss="btn.dismiss ? 'modal' : null"
           >
             {{ btn.label }}
@@ -41,6 +41,8 @@
 </template>
 
 <script>
+import { Modal } from "bootstrap";
+
 export default {
   props: {
     id: { type: String, required: true },
@@ -49,19 +51,47 @@ export default {
     closable: { type: Boolean, default: true },
     buttons: {
       type: Array,
-      default: () => [
-        {
-          label: "Tutup",
-          class: "btn-secondary",
-          action: () => {},
-          dismiss: true,
-        },
-      ],
+      default: () => [],
     },
+    visible: { type: Boolean, default: false }, // <- Tambahkan ini
   },
   computed: {
     sizeClass() {
       return `modal-dialog-${this.size}`;
+    },
+  },
+  watch: {
+    visible(val) {
+      if (val) {
+        this.showModal();
+      } else {
+        this.hideModal();
+      }
+    },
+  },
+  mounted() {
+    this.modalInstance = new Modal(this.$refs.modalEl, {
+      backdrop: "static",
+      keyboard: false,
+    });
+
+    this.$refs.modalEl.addEventListener("hidden.bs.modal", () => {
+      this.$emit("update:visible", false);
+
+      document.activeElement?.blur();
+    });
+  },
+  methods: {
+    showModal() {
+      this.modalInstance.show();
+    },
+    hideModal() {
+      this.modalInstance.hide();
+    },
+    handleAction(btn) {
+      if (typeof btn.action === "function") {
+        btn.action();
+      }
     },
   },
 };

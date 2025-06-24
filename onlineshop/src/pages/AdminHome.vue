@@ -1,6 +1,7 @@
 <template>
-  <div>
-    <Navbar />
+  <AdminNavbar />
+
+  <div class="container mt-4">
     <div class="container mt-4">
       <h2>Produk Tersedia</h2>
       <div class="row">
@@ -37,71 +38,61 @@
         <template v-else>
           <div class="col-md-4" v-for="(p, i) in produkTersaring" :key="i">
             <ProductCard
+              :productId="p.id"
               :image="p.image"
-              :title="p.title"
+              :title="p.name"
               :description="p.description"
               :price="p.price"
               :stock="p.stock"
               :reviews="p.reviews"
               :isLoggedIn="isLoggedIn"
-              @login-required="showLoginModal"
+              :role="role"
             />
           </div>
         </template>
       </div>
     </div>
   </div>
-
-  <SimpleModal
-    id="loginPromptModal"
-    title="Login Diperlukan"
-    :buttons="modalButtons"
-    :visible="modalVisible"
-    @update:visible="modalVisible = $event"
-  >
-    <template #body>
-      Untuk menambahkan produk ke keranjang, silakan login terlebih dahulu.
-    </template>
-  </SimpleModal>
 </template>
-
 <script>
 import axios from "axios";
-import * as bootstrap from "bootstrap";
-import Navbar from "../components/Navbar.vue";
+import AdminNavbar from "../components/AdminNavbar.vue";
 import ProductCard from "../components/ProductCard.vue";
-import SimpleModal from "../components/SimpleModal.vue";
+import { useUserStore } from "../stores/UserStore.js";
 
 export default {
-  components: { Navbar, ProductCard, SimpleModal },
+  components: { AdminNavbar, ProductCard },
   data() {
     return {
-      isLoggedIn: false,
       kategori: "",
       produk: [],
       kategoriList: [],
       searchQuery: "",
-      modalVisible: false,
-      modalButtons: [
-        { label: "Lihat-lihat Dulu", class: "btn-secondary", dismiss: true },
-        {
-          label: "Login Sekarang",
-          class: "btn-primary",
-          dismiss: true,
-          action: this.goToLogin,
-        },
-      ],
     };
   },
+  computed: {
+    userStore() {
+      return useUserStore();
+    },
+    isLoggedIn() {
+      return this.userStore.isAuthenticated;
+    },
+    role() {
+      return this.userStore.role;
+    },
+    produkTersaring() {
+      return this.produk.filter((p) => {
+        const cocokKategori =
+          this.kategori === "" || p.category === this.kategori;
+        const cocokSearch =
+          this.searchQuery === "" ||
+          p.name.toLowerCase().includes(this.searchQuery.toLowerCase()) ||
+          p.description.toLowerCase().includes(this.searchQuery.toLowerCase());
+        return cocokKategori && cocokSearch;
+      });
+    },
+  },
   methods: {
-    showLoginModal() {
-      this.modalVisible = true;
-    },
-    goToLogin() {
-      setTimeout(() => {
-        this.$router.push("/login");
-      }, 200);
-    },
     async ambilProduk() {
       try {
         let url = "http://localhost:3001/api/products";
@@ -129,21 +120,9 @@ export default {
     },
   },
   mounted() {
+    this.userStore.initFromLocalStorage();
     this.ambilKategori();
     this.ambilProduk();
-  },
-  computed: {
-    produkTersaring() {
-      return this.produk.filter((p) => {
-        const cocokKategori =
-          this.kategori === "" || p.category === this.kategori;
-        const cocokSearch =
-          this.searchQuery === "" ||
-          p.name.toLowerCase().includes(this.searchQuery.toLowerCase()) ||
-          p.description.toLowerCase().includes(this.searchQuery.toLowerCase());
-        return cocokKategori && cocokSearch;
-      });
-    },
   },
 };
 </script>

@@ -11,6 +11,7 @@
               <label>Nama Lengkap</label>
               <input
                 v-model="form.namaLengkap"
+                @input="errors.namaLengkap = ''"
                 type="text"
                 class="form-control"
                 :class="{ 'is-invalid': errors.namaLengkap }"
@@ -23,6 +24,7 @@
               <label>Username</label>
               <input
                 v-model="form.username"
+                @input="errors.username = ''"
                 type="text"
                 class="form-control"
                 :class="{ 'is-invalid': errors.username }"
@@ -35,6 +37,7 @@
               <label>Email</label>
               <input
                 v-model="form.email"
+                @input="errors.email = ''"
                 type="text"
                 class="form-control"
                 :class="{ 'is-invalid': errors.email }"
@@ -49,6 +52,7 @@
                 <input
                   :type="showPassword ? 'text' : 'password'"
                   v-model="form.password"
+                  @input="errors.password = ''"
                   class="form-control"
                   :class="{ 'is-invalid': errors.password }"
                   placeholder="Masukkan password"
@@ -72,6 +76,7 @@
                 <input
                   :type="showConfirmPassword ? 'text' : 'password'"
                   v-model="form.confirmPassword"
+                  @input="errors.confirmPassword = ''"
                   class="form-control"
                   :class="{
                     'is-invalid': errors.confirmPassword || passwordMismatch,
@@ -102,6 +107,7 @@
               <label>Tanggal Lahir</label>
               <input
                 v-model="form.tglLahir"
+                @input="errors.tglLahir = ''"
                 type="date"
                 class="form-control"
                 :class="{ 'is-invalid': errors.tglLahir }"
@@ -113,6 +119,7 @@
               <label>Jenis Kelamin</label>
               <select
                 v-model="form.jenisKelamin"
+                @input="errors.jenisKelamin = ''"
                 class="form-select"
                 :class="{ 'is-invalid': errors.jenisKelamin }"
               >
@@ -130,6 +137,7 @@
               <label>Alamat</label>
               <textarea
                 v-model="form.alamat"
+                @input="errors.alamat = ''"
                 class="form-control"
                 :class="{ 'is-invalid': errors.alamat }"
                 placeholder="Masukkan alamat lengkap"
@@ -142,6 +150,7 @@
               <label>Kota</label>
               <input
                 v-model="form.kota"
+                @input="errors.kota = ''"
                 type="text"
                 class="form-control"
                 :class="{ 'is-invalid': errors.kota }"
@@ -154,6 +163,7 @@
               <label>No HP</label>
               <input
                 v-model="form.noHp"
+                @input="errors.noHp = ''"
                 type="tel"
                 class="form-control"
                 :class="{ 'is-invalid': errors.noHp }"
@@ -166,6 +176,7 @@
               <label>Bank</label>
               <input
                 v-model="form.bank"
+                @input="errors.bank = ''"
                 type="text"
                 class="form-control"
                 :class="{ 'is-invalid': errors.bank }"
@@ -178,6 +189,7 @@
               <label>No Rekening</label>
               <input
                 v-model="form.noRek"
+                @input="errors.noRek = ''"
                 type="text"
                 class="form-control"
                 :class="{ 'is-invalid': errors.noRek }"
@@ -188,34 +200,33 @@
           </div>
         </div>
 
-        <button type="submit" class="btn btn-success mt-4 w-100">Daftar</button>
+        <button type="submit" class="btn btn-primary w-100" :disabled="loading">
+          <span
+            v-if="loading"
+            class="spinner-border spinner-border-sm me-2"
+            role="status"
+            aria-hidden="true"
+          ></span>
+          {{ loading ? "Memproses..." : "Daftar" }}
+        </button>
       </form>
     </div>
   </div>
-
-  <Notification
-    v-if="notifVisible"
-    :type="notifType"
-    :message="notifMessage"
-    @closed="notifVisible = false"
-  />
 </template>
 
 <script>
 import Navbar from "../components/Navbar.vue";
-import Notification from "../components/Notification.vue";
+import { useNotificationStore } from "../stores/NotificationStore.js";
 import axios from "axios";
 
 export default {
-  components: { Navbar, Notification },
+  components: { Navbar },
   data() {
     return {
+      loading: false,
       showPassword: false,
       showConfirmPassword: false,
       passwordMismatch: false,
-      notifVisible: false,
-      notifMessage: "",
-      notifType: "success",
       form: {
         namaLengkap: "",
         username: "",
@@ -236,48 +247,12 @@ export default {
   watch: {
     "form.password": "validatePasswordMatch",
     "form.confirmPassword": "validatePasswordMatch",
-    "form.namaLengkap"(val) {
-      if (val) this.errors.namaLengkap = "";
-    },
-    "form.username"(val) {
-      if (val) this.errors.username = "";
-    },
-    "form.email"(val) {
-      if (val) this.errors.email = "";
-    },
-    "form.password"(val) {
-      if (val) this.errors.password = "";
-      this.validatePasswordMatch();
-    },
-    "form.confirmPassword"(val) {
-      if (val) this.errors.confirmPassword = "";
-      this.validatePasswordMatch();
-    },
-    "form.tglLahir"(val) {
-      if (val) this.errors.tglLahir = "";
-    },
-    "form.jenisKelamin"(val) {
-      if (val) this.errors.jenisKelamin = "";
-    },
-    "form.alamat"(val) {
-      if (val) this.errors.alamat = "";
-    },
-    "form.kota"(val) {
-      if (val) this.errors.kota = "";
-    },
-    "form.noHp"(val) {
-      if (val) this.errors.noHp = "";
-    },
-    "form.bank"(val) {
-      if (val) this.errors.bank = "";
-    },
-    "form.noRek"(val) {
-      if (val) this.errors.noRek = "";
-    },
   },
   methods: {
     submitForm() {
+      const notifStore = useNotificationStore();
       this.errors = {};
+      this.loading = true;
 
       // Validasi field wajib
       if (!this.form.namaLengkap)
@@ -303,21 +278,27 @@ export default {
       if (!this.form.bank) this.errors.bank = "Bank harus diisi";
       if (!this.form.noRek) this.errors.noRek = "Nomor rekening harus diisi";
 
-      // Hentikan submit jika ada error
-      if (Object.keys(this.errors).length > 0) return;
+      if (Object.keys(this.errors).length > 0) {
+        this.loading = false;
+        notifStore.show("warning", "Lengkapi form dengan benar.");
+        return;
+      }
 
-      // Jika lolos validasi
       axios
-        .post("http://localhost:3001/api/register", this.form)
+        .post("http://localhost:3001/api/auth/register", this.form)
         .then((res) => {
-          this.showNotif("success", res.data.message);
-            this.$router.push("/login");
+          notifStore.show("success", res.data.message);
+          this.$router.push("/login");
         })
         .catch((err) => {
-          this.showNotif(
+          notifStore.show(
             "error",
             err.response.data.error || "Terjadi kesalahan saat mendaftar."
           );
+          
+        })
+        .finally(() => {
+          this.loading = false;
         });
     },
     validatePasswordMatch() {

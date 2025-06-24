@@ -20,11 +20,24 @@
         Tambah ke Keranjang
       </button>
       <hr />
+      <div v-if="isLoggedIn && (role === 'customer' || role === 'subAdmin')">
+        <ReviewForm
+          :productId="productId"
+          @submit-review="handleReviewSubmit"
+        />
+      </div>
       <div>
         <p class="mb-1"><strong>Ulasan:</strong></p>
-        <ReviewBox v-for="(review, i) in reviews" :key="i" :review="review" />
-        <p v-if="!reviews || reviews.length === 0" class="text-muted">
-          reviews
+        <ReviewBox
+          v-for="(review, i) in updatedReviews"
+          :key="i"
+          :review="review"
+        />
+        <p
+          v-if="!updatedReviews || updatedReviews.length === 0"
+          class="text-muted"
+        >
+          Belum ada ulasan
         </p>
       </div>
     </div>
@@ -32,12 +45,16 @@
 </template>
 
 <script>
+import axios from "axios";
 import ReviewBox from "./ReviewBox.vue";
-import * as bootstrap from "bootstrap";
+import ReviewForm from "./ReviewForm.vue";
+import { useNotificationStore } from "../stores/NotificationStore";
+import { useUserStore } from "../stores/UserStore";
 
 export default {
-  components: { ReviewBox },
+  components: { ReviewBox, ReviewForm },
   props: [
+    "productId",
     "image",
     "title",
     "description",
@@ -45,17 +62,61 @@ export default {
     "stock",
     "reviews",
     "isLoggedIn",
+    "role",
   ],
+  data() {
+    return {
+      updatedReviews: this.reviews,
+    };
+  },
+  mounted() {
+    this.loadReviews();
+  },
+  watch: {
+    reviews(newVal) {
+      this.updatedReviews = newVal;
+    },
+  },
   methods: {
-    handleAddToCart() {
-      if (!this.isLoggedIn) {
-        const modalEl = document.getElementById("loginPromptModal");
-        const modal = new bootstrap.Modal(modalEl);
-        modal.show();
-      } else {
-        // logika tambah ke keranjang asli di sini
-        alert("Produk ditambahkan ke keranjang!");
+    async loadReviews() {
+      try {
+        const res = await axios.get(
+          `http://localhost:3001/api/reviews/${this.productId}`
+        );
+        this.updatedReviews = res.data;
+      } catch (err) {
+        console.error("Gagal memuat ulasan:", err);
       }
+    },
+    async handleAddToCart() {
+      const notificationStore = useNotificationStore();
+      const userStore = useUserStore();
+
+      if (!this.isLoggedIn) {
+        this.$emit("login-required");
+        return;
+      }
+
+      try {
+        await axios.post("http://localhost:3001/api/cart/add", {
+          userId: userStore.id,
+          productId: this.productId,
+          quantity: 1,
+        });
+
+        notificationStore.show(
+          "success",
+          "Produk berhasil ditambahkan ke keranjang"
+        );
+      } catch (error) {
+        notificationStore.show(
+          "error",
+          error.response?.data?.error || "Gagal menambahkan ke keranjang"
+        );
+      }
+    },
+    async handleReviewSubmit() {
+      await this.loadReviews();
     },
   },
 };

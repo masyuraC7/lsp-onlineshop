@@ -3,13 +3,15 @@
     <div class="flex-grow-1">
       <router-view />
     </div>
-    <Footer />
+    <Footer v-if="!$route.meta.hideFooter" />
+    <Notification />
   </div>
 </template>
 
 <script>
-import Footer from './components/Footer.vue';
+import Footer from "./components/Footer.vue";
+import Notification from "./components/Notification.vue";
 export default {
-  components: { Footer },
+  components: { Footer, Notification },
 };
 </script>

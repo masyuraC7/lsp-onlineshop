@@ -1,18 +1,13 @@
-const mysql = require("mysql2");
+const mysql = require("mysql2/promise");
 
-const conn = mysql.createConnection({
+const conn = mysql.createPool({
   host: "localhost",
   user: "root",
-  password: "", // default Laragon tidak pakai password
+  password: "",
   database: "lsp_onlineshop",
-});
-
-conn.connect((err) => {
-  if (err) {
-    console.error("❌ Gagal koneksi ke database:", err);
-  } else {
-    console.log("✅ Terhubung ke database MySQL");
-  }
+  waitForConnections: true,
+  connectionLimit: 10,
+  queueLimit: 0,
 });
 
 module.exports = conn;
