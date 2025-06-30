@@ -1,6 +1,6 @@
 <template>
   <div class="card mb-4 shadow-sm">
-    <img :src="image" class="card-img-top" alt="{{ title }}" />
+    <img :src="image || defaultImage" class="card-img-top" alt="{{ title }}" />
 
     <div class="card-body">
       <h5 class="card-title">{{ title }}</h5>
@@ -53,8 +53,7 @@ export default {
     },
     image: {
       type: String,
-      default:
-        "https://developers.elementor.com/docs/assets/img/elementor-placeholder-image.png",
+      default: null,
     },
     title: String,
     description: String,
@@ -70,6 +69,8 @@ export default {
   data() {
     return {
       updatedReviews: this.reviews,
+      defaultImage:
+        "https://developers.elementor.com/docs/assets/img/elementor-placeholder-image.png",
     };
   },
   mounted() {

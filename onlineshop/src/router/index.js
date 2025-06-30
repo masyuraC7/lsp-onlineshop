@@ -3,6 +3,7 @@ import NotFound from "../pages/errors/404.vue";
 import Home from "../pages/Home.vue";
 import Login from "../pages/Login.vue";
 import Register from "../pages/Register.vue";
+import CustomerProfile from "../pages/Profile.vue";
 import CustomerProducts from "../pages/CustomerHome.vue";
 import CustomerCarts from "../pages/Cart.vue";
 import CustomerHistory from "../pages/TransactionHistory.vue";
@@ -13,6 +14,12 @@ const routes = [
   { path: "/", name: "Home", component: Home },
   { path: "/login", name: "Login", component: Login },
   { path: "/register", name: "Register", component: Register },
+  {
+    path: "/olshopv1/profile",
+    name: "CustomerProfile",
+    component: CustomerProfile,
+    meta: { requiresAuth: true, role: "customer" },
+  },
   {
     path: "/olshopv1/products",
     name: "CustomerProducts",

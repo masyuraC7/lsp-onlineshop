@@ -2,6 +2,7 @@ const express = require("express");
 const cors = require("cors");
 const db = require("./db");
 const authRoutes = require("./routes/auth");
+const userRoutes = require("./routes/users");
 
 const app = express();
 const port = 3001;
@@ -11,6 +12,7 @@ app.use(express.json());
 
 // Routes
 app.use("/api/auth", authRoutes);
+app.use("/api/users", userRoutes);
 
 // Root route
 app.get("/", (req, res) => {
