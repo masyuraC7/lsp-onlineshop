@@ -389,7 +389,6 @@ app.post("/api/checkout", async (req, res) => {
     );
 
     const randomSnapToken = Math.random().toString(36).substring(7);
-    const orderId = `ORDER-${Date.now()}`;
 
     const [insertResult] = await db.execute(
       `INSERT INTO transaction_history (user_id, total_amount, status, payment_method, midtrans_order_id)
@@ -411,7 +410,7 @@ app.post("/api/checkout", async (req, res) => {
 
     await db.execute(`DELETE FROM carts WHERE user_id = ?`, [userId]);
 
-    res.json({ message: "Checkout berhasil", randomSnapToken });
+    res.json({ message: "Checkout berhasil", transactionId, randomSnapToken });
   } catch (err) {
     console.error("Gagal proses checkout:", err);
     res.status(500).json({ error: "Gagal proses checkout" });
@@ -450,6 +449,45 @@ app.get("/api/transaction-details/:id", async (req, res) => {
   } catch (err) {
     console.error("Gagal mengambil detail transaksi:", err);
     res.status(500).json({ error: "Gagal mengambil detail transaksi" });
+  }
+});
+
+// Statistik untuk dashboard admin
+app.get("/api/admin/summary", async (req, res) => {
+  try {
+    // Total customer
+    const [userRows] = await db.execute("SELECT COUNT(*) as total FROM users WHERE role = 'customer'");
+    // Total admin
+    const [adminRows] = await db.execute("SELECT COUNT(*) as total FROM users WHERE role = 'admin'");
+    // Total subadmin
+    const [subadminRows] = await db.execute("SELECT COUNT(*) as total FROM users WHERE role = 'subadmin'");
+    // Total produk
+    const [productRows] = await db.execute("SELECT COUNT(*) as total FROM products");
+    // Stok per produk untuk grafik lingkaran
+    const [stockRows] = await db.execute(`
+      SELECT p.name, COALESCE(SUM(s.quantity),0) as total
+      FROM products p
+      LEFT JOIN stocks s ON s.product_id = p.id
+      GROUP BY p.id
+    `);
+    // Frekuensi transaksi per hari (7 hari terakhir)
+    const [trxRows] = await db.execute(`
+      SELECT DATE(created_at) as tanggal, COUNT(*) as jumlah
+      FROM transaction_history
+      WHERE created_at >= DATE_SUB(CURDATE(), INTERVAL 6 DAY)
+      GROUP BY DATE(created_at)
+      ORDER BY tanggal ASC
+    `);
+    res.json({
+      customers: userRows[0].total,
+      admins: adminRows[0].total,
+      subadmins: subadminRows[0].total,
+      products: productRows[0].total,
+      stockChart: stockRows,
+      transactions: trxRows,
+    });
+  } catch (err) {
+    res.status(500).json({ error: "Gagal mengambil data summary" });
   }
 });
 
