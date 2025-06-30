@@ -1,6 +1,8 @@
 <template>
   <div>
-    <CustomerNavbar />
+    <AdminNavbar v-if="userRole === 'admin' || userRole === 'subadmin'" />
+    <CustomerNavbar v-else />
+
     <div class="container mt-4 mb-5" style="max-width: 700px">
       <h3 class="mb-4 text-center">Profil Pengguna</h3>
       <div v-if="!editMode">
@@ -255,13 +257,14 @@
 
 <script>
 import CustomerNavbar from "../components/CustomerNavbar.vue";
+import AdminNavbar from "../components/AdminNavbar.vue";
 import SimpleModal from "../components/SimpleModal.vue";
 import axios from "axios";
 import { useUserStore } from "../stores/UserStore";
 import { useNotificationStore } from "../stores/NotificationStore";
 
 export default {
-  components: { CustomerNavbar, SimpleModal },
+  components: { CustomerNavbar, AdminNavbar, SimpleModal },
   data() {
     return {
       user: {},
@@ -283,6 +286,11 @@ export default {
       passwordCooldown: 0,
       passwordCooldownInterval: null,
     };
+  },
+  computed: {
+    userRole() {
+      return this.userStore.user?.role || "";
+    },
   },
   methods: {
     formatDate(dateStr) {

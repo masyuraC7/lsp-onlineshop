@@ -7,7 +7,7 @@ const db = require("../db");
 router.get("/", async (req, res) => {
   try {
     const [users] = await db.execute(
-      `SELECT id, full_name AS namaLengkap, username, email, birth_date AS tglLahir, gender AS jenisKelamin, address AS alamat, city AS kota, phone AS noHp, bank_name AS bank, bank_account AS noRek, role FROM users`
+      `SELECT id, full_name AS namaLengkap, username, email, birth_date AS tglLahir, gender AS jenisKelamin, address AS alamat, city AS kota, phone AS noHp, bank_name AS bank, bank_account AS noRek, role, created_at FROM users`
     );
     res.json(users);
   } catch (err) {
@@ -97,6 +97,20 @@ router.put("/:id/password", async (req, res) => {
     res.json({ message: "Password berhasil diubah" });
   } catch (err) {
     res.status(500).json({ error: "Gagal mengubah password" });
+  }
+});
+
+// Delete user by id (admin only)
+router.delete("/:id", async (req, res) => {
+  const { id } = req.params;
+  try {
+    const [result] = await db.execute("DELETE FROM users WHERE id = ?", [id]);
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: "User tidak ditemukan" });
+    }
+    res.json({ message: "User berhasil dihapus" });
+  } catch (err) {
+    res.status(500).json({ error: "Gagal menghapus user" });
   }
 });
 

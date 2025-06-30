@@ -96,7 +96,7 @@ export default {
 
         notifStore.show("success", message);
 
-        if (role === "admin") this.$router.push("/admin/dashboard");
+        if (role === "admin") this.$router.push("/olshopv1/cpanel");
         else if (role === "customer") this.$router.push("/olshopv1/products");
         else this.$router.push("/");
       } catch (err) {

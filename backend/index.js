@@ -3,6 +3,7 @@ const cors = require("cors");
 const db = require("./db");
 const authRoutes = require("./routes/auth");
 const userRoutes = require("./routes/users");
+const transactionHistoryRoutes = require("./routes/transactionHistory");
 
 const app = express();
 const port = 3001;
@@ -13,6 +14,7 @@ app.use(express.json());
 // Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
+app.use("/api/transactionsHistory", transactionHistoryRoutes);
 
 // Root route
 app.get("/", (req, res) => {
@@ -39,7 +41,8 @@ app.get("/api/categories", async (req, res) => {
   }
 });
 
-// Get all products with reviews and stock
+// === PRODUCTS ENDPOINT ===
+// Get all products with reviews and total stock
 app.get("/api/products", async (req, res) => {
   const kategori = req.query.category;
 
@@ -47,7 +50,7 @@ app.get("/api/products", async (req, res) => {
       SELECT 
         p.*, 
         c.name AS category, 
-        s.quantity AS stock,
+        COALESCE(SUM(st.quantity), 0) AS stock,
         (
           SELECT JSON_ARRAYAGG(
             JSON_OBJECT(
@@ -62,8 +65,8 @@ app.get("/api/products", async (req, res) => {
         ) AS reviews
       FROM products p
       JOIN categories c ON p.category_id = c.id
-      LEFT JOIN stocks s ON s.product_id = p.id
-    `;
+      LEFT JOIN stocks st ON st.product_id = p.id
+  `;
 
   const params = [];
 
@@ -71,6 +74,8 @@ app.get("/api/products", async (req, res) => {
     sql += ` WHERE c.name = ?`;
     params.push(kategori);
   }
+
+  sql += ` GROUP BY p.id`;
 
   try {
     const [rows] = await db.execute(sql, params);
@@ -88,6 +93,144 @@ app.get("/api/products", async (req, res) => {
   } catch (err) {
     console.error("Error get products:", err);
     res.status(500).json({ error: "Gagal mengambil data produk" });
+  }
+});
+
+// Tambah produk baru
+app.post("/api/products", async (req, res) => {
+  const { name, category, price } = req.body;
+  if (!name || !category || price == null) {
+    return res.status(400).json({ error: "Field tidak boleh kosong" });
+  }
+  try {
+    // Cari id kategori
+    const [catRows] = await db.execute(
+      "SELECT id FROM categories WHERE name = ?",
+      [category]
+    );
+    let categoryId;
+    if (catRows.length > 0) {
+      categoryId = catRows[0].id;
+    } else {
+      // Jika kategori belum ada, buat baru
+      const [catInsert] = await db.execute(
+        "INSERT INTO categories (name) VALUES (?)",
+        [category]
+      );
+      categoryId = catInsert.insertId;
+    }
+    const [result] = await db.execute(
+      "INSERT INTO products (name, category_id, price) VALUES (?, ?, ?)",
+      [name, categoryId, price]
+    );
+    res.json({ message: "Produk berhasil ditambah", id: result.insertId });
+  } catch (err) {
+    res.status(500).json({ error: "Gagal menambah produk" });
+  }
+});
+
+// Edit produk
+app.put("/api/products/:id", async (req, res) => {
+  const { id } = req.params;
+  const { name, category, price } = req.body;
+  if (!name || !category || price == null) {
+    return res.status(400).json({ error: "Field tidak boleh kosong" });
+  }
+  try {
+    // Cari id kategori
+    const [catRows] = await db.execute(
+      "SELECT id FROM categories WHERE name = ?",
+      [category]
+    );
+    let categoryId;
+    if (catRows.length > 0) {
+      categoryId = catRows[0].id;
+    } else {
+      const [catInsert] = await db.execute(
+        "INSERT INTO categories (name) VALUES (?)",
+        [category]
+      );
+      categoryId = catInsert.insertId;
+    }
+    await db.execute(
+      "UPDATE products SET name = ?, category_id = ?, price = ? WHERE id = ?",
+      [name, categoryId, price, id]
+    );
+    res.json({ message: "Produk berhasil diupdate" });
+  } catch (err) {
+    res.status(500).json({ error: "Gagal mengupdate produk" });
+  }
+});
+
+// Hapus produk
+app.delete("/api/products/:id", async (req, res) => {
+  const { id } = req.params;
+  try {
+    await db.execute("DELETE FROM products WHERE id = ?", [id]);
+    res.json({ message: "Produk berhasil dihapus" });
+  } catch (err) {
+    res.status(500).json({ error: "Gagal menghapus produk" });
+  }
+});
+
+// === STOCKS ENDPOINT ===
+// Get all stocks (join product name)
+app.get("/api/stocks", async (req, res) => {
+  try {
+    const [rows] = await db.execute(
+      `SELECT s.id, s.product_id, p.name AS product_name, s.quantity, s.supplier
+       FROM stocks s
+       JOIN products p ON s.product_id = p.id`
+    );
+    res.json(rows);
+  } catch (err) {
+    res.status(500).json({ error: "Gagal mengambil data stok" });
+  }
+});
+
+// Add new stock
+app.post("/api/stocks", async (req, res) => {
+  const { product_id, quantity, supplier } = req.body;
+  if (!product_id || quantity == null || !supplier) {
+    return res.status(400).json({ error: "Field tidak boleh kosong" });
+  }
+  try {
+    const [result] = await db.execute(
+      "INSERT INTO stocks (product_id, quantity, supplier) VALUES (?, ?, ?)",
+      [product_id, quantity, supplier]
+    );
+    res.json({ message: "Stok berhasil ditambah", id: result.insertId });
+  } catch (err) {
+    res.status(500).json({ error: "Gagal menambah stok" });
+  }
+});
+
+// Edit stock
+app.put("/api/stocks/:id", async (req, res) => {
+  const { id } = req.params;
+  const { product_id, quantity, supplier } = req.body;
+  if (!product_id || quantity == null || !supplier) {
+    return res.status(400).json({ error: "Field tidak boleh kosong" });
+  }
+  try {
+    await db.execute(
+      "UPDATE stocks SET product_id = ?, quantity = ?, supplier = ? WHERE id = ?",
+      [product_id, quantity, supplier, id]
+    );
+    res.json({ message: "Stok berhasil diupdate" });
+  } catch (err) {
+    res.status(500).json({ error: "Gagal mengupdate stok" });
+  }
+});
+
+// Delete stock
+app.delete("/api/stocks/:id", async (req, res) => {
+  const { id } = req.params;
+  try {
+    await db.execute("DELETE FROM stocks WHERE id = ?", [id]);
+    res.json({ message: "Stok berhasil dihapus" });
+  } catch (err) {
+    res.status(500).json({ error: "Gagal menghapus stok" });
   }
 });
 
@@ -127,17 +270,19 @@ app.get("/api/reviews/:productId", async (req, res) => {
   }
 });
 
+// === CART ENDPOINT ===
 // Get Cart for a specific user
 app.get("/api/cart/:userId", async (req, res) => {
   const { userId } = req.params;
 
   try {
     const [items] = await db.execute(
-      `SELECT c.id, c.quantity, p.name, p.price, s.quantity AS stock
+      `SELECT c.id, c.quantity, p.name, p.price, COALESCE(SUM(s.quantity), 0) AS stock
          FROM carts c
          JOIN products p ON c.product_id = p.id
-         JOIN stocks s ON s.product_id = p.id
-         WHERE c.user_id = ?`,
+         LEFT JOIN stocks s ON s.product_id = p.id
+         WHERE c.user_id = ?
+         GROUP BY c.id`,
       [userId]
     );
 
@@ -270,45 +415,6 @@ app.post("/api/checkout", async (req, res) => {
   } catch (err) {
     console.error("Gagal proses checkout:", err);
     res.status(500).json({ error: "Gagal proses checkout" });
-  }
-});
-
-// Get transaction history for a specific user
-app.get("/api/transactions/:userId", async (req, res) => {
-  const { userId } = req.params;
-
-  try {
-    const [rows] = await db.execute(
-      `SELECT * FROM transaction_history WHERE user_id = ? ORDER BY created_at DESC`,
-      [userId]
-    );
-    res.json(rows);
-  } catch (err) {
-    console.error("Gagal mengambil transaksi:", err);
-    res.status(500).json({ error: "Gagal mengambil transaksi" });
-  }
-});
-
-// Cancel a transaction
-app.put("/api/transactions/cancel/:id", async (req, res) => {
-  const { id } = req.params;
-
-  try {
-    const [result] = await db.execute(
-      `UPDATE transaction_history
-         SET status = 'failed'
-         WHERE id = ? AND status = 'pending'`,
-      [id]
-    );
-
-    if (result.affectedRows === 0) {
-      return res.status(400).json({ error: "Transaksi tidak bisa dibatalkan" });
-    }
-
-    res.json({ message: "Transaksi dibatalkan" });
-  } catch (err) {
-    console.error("Gagal membatalkan transaksi:", err);
-    res.status(500).json({ error: "Gagal proses pembatalan" });
   }
 });
 
