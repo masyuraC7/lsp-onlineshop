@@ -15,6 +15,11 @@
           'mb-2',
           'shadow',
         ]"
+        tabindex="0"
+        @mouseenter="pause(n.id)"
+        @mouseleave="resume(n.id)"
+        @focus="pause(n.id)"
+        @blur="resume(n.id)"
       >
         <div class="d-flex w-100 align-items-center justify-content-between">
           <div class="d-flex align-items-center">
@@ -28,7 +33,6 @@
             @click="remove(n.id)"
           ></button>
         </div>
-
         <!-- Progress bar -->
         <div class="progress mt-2 w-100" style="height: 4px">
           <div
@@ -48,29 +52,39 @@ import { watch, reactive, onUnmounted } from "vue";
 export default {
   setup() {
     const notifStore = useNotificationStore();
-    const progressMap = reactive({}); // Store width per notifikasi
-    const intervalMap = {}; // Store interval ID per notifikasi
+    const progressMap = reactive({});
+    const timerMap = {}; 
+    const remainingMap = {};
+    const totalMap = {}; 
+    const pausedAtMap = {}; 
+
+    const TICK = 80;
 
     const startProgress = (notif) => {
-      if (intervalMap[notif.id]) return; // prevent multiple intervals
-
-      const duration = notif.duration || 4000;
-      const steps = 100;
-      const stepTime = duration / steps;
-      let current = 0;
-
+      if (timerMap[notif.id]) return;
+      const total = notif.duration || 4000;
+      totalMap[notif.id] = total;
+      remainingMap[notif.id] = total;
       progressMap[notif.id] = 100;
-
-      intervalMap[notif.id] = setInterval(() => {
-        current++;
-        progressMap[notif.id] = 100 - current;
-
-        if (current >= steps) {
-          clearInterval(intervalMap[notif.id]);
+      let lastUpdate = Date.now();
+      timerMap[notif.id] = setInterval(() => {
+        const now = Date.now();
+        const elapsed = now - lastUpdate;
+        lastUpdate = now;
+        remainingMap[notif.id] -= elapsed;
+        if (remainingMap[notif.id] < 0) remainingMap[notif.id] = 0;
+        progressMap[notif.id] =
+          (remainingMap[notif.id] / totalMap[notif.id]) * 100;
+        if (remainingMap[notif.id] <= 0) {
+          clearInterval(timerMap[notif.id]);
+          delete timerMap[notif.id];
           delete progressMap[notif.id];
-          delete intervalMap[notif.id];
+          delete remainingMap[notif.id];
+          delete totalMap[notif.id];
+          delete pausedAtMap[notif.id];
+          notifStore.remove(notif.id);
         }
-      }, stepTime);
+      }, TICK);
     };
 
     watch(
@@ -86,14 +100,47 @@ export default {
     );
 
     const remove = (id) => {
-      clearInterval(intervalMap[id]);
-      delete intervalMap[id];
+      clearInterval(timerMap[id]);
+      delete timerMap[id];
       delete progressMap[id];
+      delete remainingMap[id];
+      delete totalMap[id];
+      delete pausedAtMap[id];
       notifStore.remove(id);
     };
 
+    const pause = (id) => {
+      if (timerMap[id]) {
+        clearInterval(timerMap[id]);
+        timerMap[id] = null;
+        pausedAtMap[id] = Date.now();
+      }
+    };
+    const resume = (id) => {
+      if (!timerMap[id] && remainingMap[id] > 0) {
+        let lastUpdate = Date.now();
+        timerMap[id] = setInterval(() => {
+          const now = Date.now();
+          const elapsed = now - lastUpdate;
+          lastUpdate = now;
+          remainingMap[id] -= elapsed;
+          if (remainingMap[id] < 0) remainingMap[id] = 0;
+          progressMap[id] = (remainingMap[id] / totalMap[id]) * 100;
+          if (remainingMap[id] <= 0) {
+            clearInterval(timerMap[id]);
+            delete timerMap[id];
+            delete progressMap[id];
+            delete remainingMap[id];
+            delete totalMap[id];
+            delete pausedAtMap[id];
+            notifStore.remove(id);
+          }
+        }, TICK);
+      }
+    };
+
     onUnmounted(() => {
-      Object.values(intervalMap).forEach(clearInterval);
+      Object.values(timerMap).forEach(clearInterval);
     });
 
     const alertClass = (type) =>
@@ -116,6 +163,8 @@ export default {
       alertClass,
       iconClass,
       remove,
+      pause,
+      resume,
     };
   },
 };

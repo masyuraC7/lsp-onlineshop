@@ -1,5 +1,5 @@
 <template>
-  <AdminNavbar />
+  <CustomerNavbar />
 
   <div class="container mt-4">
     <div class="container mt-4">
@@ -56,12 +56,12 @@
 </template>
 <script>
 import axios from "axios";
-import AdminNavbar from "../components/AdminNavbar.vue";
 import ProductCard from "../components/ProductCard.vue";
 import { useUserStore } from "../stores/UserStore.js";
+import CustomerNavbar from "../components/CustomerNavbar.vue";
 
 export default {
-  components: { AdminNavbar, ProductCard },
+  components: { CustomerNavbar, ProductCard },
   data() {
     return {
       kategori: "",

@@ -1,13 +1,6 @@
 <template>
   <div class="card mb-4 shadow-sm">
-    <img
-      :src="
-        image ||
-        'https://developers.elementor.com/docs/assets/img/elementor-placeholder-image.png'
-      "
-      class="card-img-top"
-      alt="{{ title }}"
-    />
+    <img :src="image" class="card-img-top" alt="{{ title }}" />
 
     <div class="card-body">
       <h5 class="card-title">{{ title }}</h5>
@@ -53,17 +46,27 @@ import { useUserStore } from "../stores/UserStore";
 
 export default {
   components: { ReviewBox, ReviewForm },
-  props: [
-    "productId",
-    "image",
-    "title",
-    "description",
-    "price",
-    "stock",
-    "reviews",
-    "isLoggedIn",
-    "role",
-  ],
+  props: {
+    productId: {
+      type: [String, Number],
+      required: true,
+    },
+    image: {
+      type: String,
+      default:
+        "https://developers.elementor.com/docs/assets/img/elementor-placeholder-image.png",
+    },
+    title: String,
+    description: String,
+    price: String,
+    stock: Number,
+    reviews: Array,
+    isLoggedIn: {
+      type: Boolean,
+      default: false,
+    },
+    role: String,
+  },
   data() {
     return {
       updatedReviews: this.reviews,

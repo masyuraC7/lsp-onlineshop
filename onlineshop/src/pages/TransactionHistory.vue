@@ -50,6 +50,13 @@
               >
                 Batalkan
               </button>
+              <button
+                v-if="tx.status === 'failed' || tx.status === 'paid'"
+                class="btn btn-sm btn-primary"
+                @click="handleDetail(tx.id)"
+              >
+                Details
+              </button>
             </td>
           </tr>
         </tbody>
@@ -60,7 +67,8 @@
 
 <script>
 import axios from "axios";
-import AdminNavbar from "../components/AdminNavbar.vue";
+import {useRouter} from "vue-router";
+import AdminNavbar from "../components/CustomerNavbar.vue";
 import { onMounted, ref } from "vue";
 import { useUserStore } from "../stores/UserStore";
 import { useNotificationStore } from "../stores/NotificationStore";
@@ -68,8 +76,13 @@ import { useNotificationStore } from "../stores/NotificationStore";
 export default {
   components: { AdminNavbar },
   setup() {
+    const router = useRouter();
     const transactions = ref([]);
     const userStore = useUserStore();
+
+    const handleDetail = (id) => {
+      router.push(`/olshopv1/transaction-details/${id}`);
+    };
 
     const fetchTransactions = async () => {
       try {
@@ -110,6 +123,7 @@ export default {
       transactions,
       formatDate,
       cancelTransaction,
+      handleDetail,
     };
   },
 };

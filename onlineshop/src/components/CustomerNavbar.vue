@@ -1,11 +1,11 @@
 <template>
-  <Navbar :logo="null" :titleWithLink="false">
+  <Navbar :titleWithLink="false" :showAccount="true">
     <template #right>
       <router-link
         to="/olshopv1/products"
         class="nav-link d-inline text-white me-4"
         active-class="active"
-        >Product</router-link
+        >Products</router-link
       >
       <router-link
         to="/olshopv1/carts"
@@ -14,14 +14,21 @@
         >Keranjang</router-link
       >
       <router-link
-        to="/olshopv1/transactions-history"
+        to="/olshopv1/transaction-history"
         class="nav-link d-inline text-white me-4"
         active-class="active"
         >Transaksi</router-link
       >
-      <button @click="handleLogout" class="nav-link d-inline text-white me-4">
-        Logout
-      </button>
+    </template>
+    <template #account-dropdown>
+      <li>
+        <router-link to="/olshopv1/profile" class="dropdown-item"
+          >Profile</router-link
+        >
+      </li>
+      <li>
+        <button @click="handleLogout" class="dropdown-item">Logout</button>
+      </li>
     </template>
   </Navbar>
 </template>
@@ -55,5 +62,11 @@ export default {
 .nav-link.active {
   color: #0d6efd !important;
   font-weight: 600;
+}
+
+.dropdown-menu .dropdown-item:hover,
+.dropdown-menu .dropdown-item:focus {
+  background-color: #0d6efd !important;
+  color: #fff !important;
 }
 </style>

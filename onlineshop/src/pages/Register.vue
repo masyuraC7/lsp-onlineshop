@@ -5,13 +5,12 @@
       <h3 class="mb-4 text-center">Form Registrasi</h3>
       <form @submit.prevent="submitForm">
         <div class="row g-3">
-          <!-- Kolom Kiri -->
           <div class="col-md-6">
             <div class="form-group">
               <label>Nama Lengkap</label>
               <input
                 v-model="form.namaLengkap"
-                @input="errors.namaLengkap = ''"
+                @input="clearError('namaLengkap')"
                 type="text"
                 class="form-control"
                 :class="{ 'is-invalid': errors.namaLengkap }"
@@ -19,12 +18,11 @@
               />
               <div class="invalid-feedback">{{ errors.namaLengkap }}</div>
             </div>
-
             <div class="form-group">
               <label>Username</label>
               <input
                 v-model="form.username"
-                @input="errors.username = ''"
+                @input="clearError('username')"
                 type="text"
                 class="form-control"
                 :class="{ 'is-invalid': errors.username }"
@@ -32,12 +30,11 @@
               />
               <div class="invalid-feedback">{{ errors.username }}</div>
             </div>
-
             <div class="form-group">
               <label>Email</label>
               <input
                 v-model="form.email"
-                @input="errors.email = ''"
+                @input="clearError('email')"
                 type="text"
                 class="form-control"
                 :class="{ 'is-invalid': errors.email }"
@@ -45,14 +42,13 @@
               />
               <div class="invalid-feedback">{{ errors.email }}</div>
             </div>
-
             <div class="form-group">
               <label>Password</label>
               <div class="input-group">
                 <input
                   :type="showPassword ? 'text' : 'password'"
                   v-model="form.password"
-                  @input="errors.password = ''"
+                  @input="clearError('password')"
                   class="form-control"
                   :class="{ 'is-invalid': errors.password }"
                   placeholder="Masukkan password"
@@ -69,14 +65,13 @@
                 <div class="invalid-feedback">{{ errors.password }}</div>
               </div>
             </div>
-
             <div class="form-group">
               <label>Konfirmasi Password</label>
               <div class="input-group">
                 <input
                   :type="showConfirmPassword ? 'text' : 'password'"
                   v-model="form.confirmPassword"
-                  @input="errors.confirmPassword = ''"
+                  @input="clearError('confirmPassword')"
                   class="form-control"
                   :class="{
                     'is-invalid': errors.confirmPassword || passwordMismatch,
@@ -102,24 +97,22 @@
                 </div>
               </div>
             </div>
-
             <div class="form-group">
               <label>Tanggal Lahir</label>
               <input
                 v-model="form.tglLahir"
-                @input="errors.tglLahir = ''"
+                @input="clearError('tglLahir')"
                 type="date"
                 class="form-control"
                 :class="{ 'is-invalid': errors.tglLahir }"
               />
               <div class="invalid-feedback">{{ errors.tglLahir }}</div>
             </div>
-
             <div class="form-group">
               <label>Jenis Kelamin</label>
               <select
                 v-model="form.jenisKelamin"
-                @input="errors.jenisKelamin = ''"
+                @input="clearError('jenisKelamin')"
                 class="form-select"
                 :class="{ 'is-invalid': errors.jenisKelamin }"
               >
@@ -130,14 +123,12 @@
               <div class="invalid-feedback">{{ errors.jenisKelamin }}</div>
             </div>
           </div>
-
-          <!-- Kolom Kanan -->
           <div class="col-md-6">
             <div class="form-group">
               <label>Alamat</label>
               <textarea
                 v-model="form.alamat"
-                @input="errors.alamat = ''"
+                @input="clearError('alamat')"
                 class="form-control"
                 :class="{ 'is-invalid': errors.alamat }"
                 placeholder="Masukkan alamat lengkap"
@@ -145,12 +136,11 @@
               ></textarea>
               <div class="invalid-feedback">{{ errors.alamat }}</div>
             </div>
-
             <div class="form-group">
               <label>Kota</label>
               <input
                 v-model="form.kota"
-                @input="errors.kota = ''"
+                @input="clearError('kota')"
                 type="text"
                 class="form-control"
                 :class="{ 'is-invalid': errors.kota }"
@@ -158,12 +148,11 @@
               />
               <div class="invalid-feedback">{{ errors.kota }}</div>
             </div>
-
             <div class="form-group">
               <label>No HP</label>
               <input
                 v-model="form.noHp"
-                @input="errors.noHp = ''"
+                @input="clearError('noHp')"
                 type="tel"
                 class="form-control"
                 :class="{ 'is-invalid': errors.noHp }"
@@ -171,12 +160,11 @@
               />
               <div class="invalid-feedback">{{ errors.noHp }}</div>
             </div>
-
             <div class="form-group">
               <label>Bank</label>
               <input
                 v-model="form.bank"
-                @input="errors.bank = ''"
+                @input="clearError('bank')"
                 type="text"
                 class="form-control"
                 :class="{ 'is-invalid': errors.bank }"
@@ -184,12 +172,11 @@
               />
               <div class="invalid-feedback">{{ errors.bank }}</div>
             </div>
-
             <div class="form-group">
               <label>No Rekening</label>
               <input
                 v-model="form.noRek"
-                @input="errors.noRek = ''"
+                @input="clearError('noRek')"
                 type="text"
                 class="form-control"
                 :class="{ 'is-invalid': errors.noRek }"
@@ -249,11 +236,13 @@ export default {
     "form.confirmPassword": "validatePasswordMatch",
   },
   methods: {
+    clearError(field) {
+      this.errors[field] = "";
+    },
     submitForm() {
       const notifStore = useNotificationStore();
       this.errors = {};
       this.loading = true;
-
       // Validasi field wajib
       if (!this.form.namaLengkap)
         this.errors.namaLengkap = "Nama lengkap harus diisi";
@@ -261,7 +250,7 @@ export default {
       if (!this.form.email) {
         this.errors.email = "Email harus diisi";
       } else if (!this.form.email.includes("@")) {
-        this.errors.email = "Email tidak valid, harus mengandung @mail";
+        this.errors.email = "Email tidak valid, harus mengandung @gmail.com";
       } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(this.form.email)) {
         this.errors.email = "Format email tidak valid";
       }
@@ -277,13 +266,14 @@ export default {
       if (!this.form.noHp) this.errors.noHp = "No HP harus diisi";
       if (!this.form.bank) this.errors.bank = "Bank harus diisi";
       if (!this.form.noRek) this.errors.noRek = "Nomor rekening harus diisi";
-
-      if (Object.keys(this.errors).length > 0) {
+      if (this.form.password !== this.form.confirmPassword) {
+        this.errors.confirmPassword = "Password tidak cocok";
+      }
+      if (Object.keys(this.errors).some((k) => this.errors[k])) {
         this.loading = false;
         notifStore.show("warning", "Lengkapi form dengan benar.");
         return;
       }
-
       axios
         .post("http://localhost:3001/api/auth/register", this.form)
         .then((res) => {
@@ -293,27 +283,17 @@ export default {
         .catch((err) => {
           notifStore.show(
             "error",
-            err.response.data.error || "Terjadi kesalahan saat mendaftar."
+            err.response?.data?.error || "Terjadi kesalahan saat mendaftar."
           );
-          
         })
         .finally(() => {
           this.loading = false;
         });
     },
     validatePasswordMatch() {
-      // Cek hanya jika user sudah mulai mengetik konfirmasi password
-      if (this.form.confirmPassword) {
-        this.passwordMismatch =
-          this.form.password !== this.form.confirmPassword;
-      } else {
-        this.passwordMismatch = false;
-      }
-    },
-    showNotif(type = "success", msg) {
-      this.notifMessage = msg;
-      this.notifType = type;
-      this.notifVisible = true;
+      this.passwordMismatch =
+        this.form.confirmPassword &&
+        this.form.password !== this.form.confirmPassword;
     },
   },
 };

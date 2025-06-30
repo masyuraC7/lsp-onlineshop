@@ -50,7 +50,10 @@ import { useNotificationStore } from "../stores/NotificationStore";
 export default {
   name: "ReviewForm",
   props: {
-    productId: { type: String, required: true },
+    productId: {
+      type: [String, Number],
+      required: true,
+    },
   },
   data() {
     return {

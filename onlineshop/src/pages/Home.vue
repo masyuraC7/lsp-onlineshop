@@ -37,13 +37,13 @@
         <template v-else>
           <div class="col-md-4" v-for="(p, i) in produkTersaring" :key="i">
             <ProductCard
+              :product-id="p.id"
               :image="p.image"
-              :title="p.title"
+              :title="p.name"
               :description="p.description"
               :price="p.price"
               :stock="p.stock"
               :reviews="p.reviews"
-              :isLoggedIn="isLoggedIn"
               @login-required="showLoginModal"
             />
           </div>
@@ -67,7 +67,6 @@
 
 <script>
 import axios from "axios";
-import * as bootstrap from "bootstrap";
 import Navbar from "../components/Navbar.vue";
 import ProductCard from "../components/ProductCard.vue";
 import SimpleModal from "../components/SimpleModal.vue";
@@ -76,7 +75,6 @@ export default {
   components: { Navbar, ProductCard, SimpleModal },
   data() {
     return {
-      isLoggedIn: false,
       kategori: "",
       produk: [],
       kategoriList: [],

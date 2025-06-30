@@ -82,7 +82,7 @@
 </template>
 
 <script>
-import AdminNavbar from "../components/AdminNavbar.vue";
+import AdminNavbar from "../components/CustomerNavbar.vue";
 import { useCartStore } from "../stores/CartStore";
 import { onMounted } from "vue";
 import axios from "axios";
@@ -96,7 +96,7 @@ export default {
     const cart = useCartStore();
 
     onMounted(() => {
-      cart.fetchCart(); // load dari backend
+      cart.fetchCart(); 
     });
 
     const handleCheckout = async () => {

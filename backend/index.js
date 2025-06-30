@@ -37,6 +37,7 @@ app.get("/api/categories", async (req, res) => {
   }
 });
 
+// Get all products with reviews and stock
 app.get("/api/products", async (req, res) => {
   const kategori = req.query.category;
 
@@ -78,7 +79,7 @@ app.get("/api/products", async (req, res) => {
         ? p.reviews
         : typeof p.reviews === "string"
         ? JSON.parse(p.reviews)
-        : [], // fallback jika null
+        : [],
     }));
 
     res.json(data);
@@ -88,6 +89,7 @@ app.get("/api/products", async (req, res) => {
   }
 });
 
+// Create a new review for a product
 app.post("/api/reviews", async (req, res) => {
   const { userId, productId, rating, comment } = req.body;
 
@@ -103,6 +105,7 @@ app.post("/api/reviews", async (req, res) => {
   }
 });
 
+// Get reviews for a specific product
 app.get("/api/reviews/:productId", async (req, res) => {
   const { productId } = req.params;
 
@@ -122,6 +125,7 @@ app.get("/api/reviews/:productId", async (req, res) => {
   }
 });
 
+// Get Cart for a specific user
 app.get("/api/cart/:userId", async (req, res) => {
   const { userId } = req.params;
 
@@ -142,6 +146,7 @@ app.get("/api/cart/:userId", async (req, res) => {
   }
 });
 
+// Add or update item in cart
 app.post("/api/cart/add", async (req, res) => {
   const { userId, productId, quantity } = req.body;
 
@@ -170,6 +175,7 @@ app.post("/api/cart/add", async (req, res) => {
   }
 });
 
+// Update item quantity in cart
 app.put("/api/cart/:id", async (req, res) => {
   const { id } = req.params;
   const { quantity } = req.body;
@@ -186,6 +192,7 @@ app.put("/api/cart/:id", async (req, res) => {
   }
 });
 
+// Delete item from cart
 app.delete("/api/cart/:id", async (req, res) => {
   const { id } = req.params;
 
@@ -198,6 +205,7 @@ app.delete("/api/cart/:id", async (req, res) => {
   }
 });
 
+// Clear cart for a specific user
 app.delete("/api/cart/clear/:userId", async (req, res) => {
   const { userId } = req.params;
 
@@ -210,6 +218,7 @@ app.delete("/api/cart/clear/:userId", async (req, res) => {
   }
 });
 
+// Checkout process
 app.post("/api/checkout", async (req, res) => {
   const { userId } = req.body;
   const orderId = `ORDER-${Date.now()}`;
@@ -262,6 +271,7 @@ app.post("/api/checkout", async (req, res) => {
   }
 });
 
+// Get transaction history for a specific user
 app.get("/api/transactions/:userId", async (req, res) => {
   const { userId } = req.params;
 
@@ -277,6 +287,7 @@ app.get("/api/transactions/:userId", async (req, res) => {
   }
 });
 
+// Cancel a transaction
 app.put("/api/transactions/cancel/:id", async (req, res) => {
   const { id } = req.params;
 
@@ -299,10 +310,47 @@ app.put("/api/transactions/cancel/:id", async (req, res) => {
   }
 });
 
+// Get transaction details by ID
+app.get("/api/transaction-details/:id", async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const [transaksiRows] = await db.execute(
+      `SELECT *
+         FROM transaction_history
+         WHERE id = ?`,
+      [id]
+    );
+
+    if (transaksiRows.length === 0) {
+      return res.status(404).json({ error: "Transaksi tidak ditemukan" });
+    }
+
+    const transaksi = transaksiRows[0];
+
+    const [itemRows] = await db.execute(
+      `SELECT p.name, p.price, td.quantity
+         FROM transaction_details td
+         JOIN products p ON td.product_id = p.id
+         WHERE td.transaction_id = ?`,
+      [id]
+    );
+
+    transaksi.items = itemRows;
+
+    res.json(transaksi);
+  } catch (err) {
+    console.error("Gagal mengambil detail transaksi:", err);
+    res.status(500).json({ error: "Gagal mengambil detail transaksi" });
+  }
+});
+
+// Handle 404 Not Found
 app.use((req, res) => {
   res.status(404).json({ error: "Halaman tidak ditemukan" });
 });
 
+// Start the server
 app.listen(port, () => {
   console.log(`🚀 Server berjalan di http://localhost:${port}`);
 });
