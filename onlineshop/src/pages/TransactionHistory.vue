@@ -40,7 +40,7 @@
               </span>
             </td>
             <td>{{ tx.payment_method }}</td>
-            <td>{{ tx.midtrans_order_id }}</td>
+            <td>{{ tx.order_id }}</td>
             <td>{{ formatDate(tx.created_at) }}</td>
             <td>
               <button
@@ -68,12 +68,21 @@
               <button
                 v-if="userRole === 'customer' && tx.status === 'pending'"
                 class="btn btn-sm btn-danger me-1"
-                @click="cancelTransaction(tx.id)"
+                @click="showCancelConfirm(tx.id)"
               >
                 Batalkan
               </button>
-              <button class="btn btn-sm btn-primary" @click="showDetail(tx.id)">
+              <button
+                class="btn btn-sm btn-primary me-1"
+                @click="showDetail(tx.id)"
+              >
                 Details
+              </button>
+              <button
+                class="btn btn-sm btn-outline-secondary"
+                @click="printInvoice(tx.id)"
+              >
+                Cetak Invoice
               </button>
             </td>
           </tr>
@@ -119,7 +128,7 @@
               </tr>
               <tr>
                 <th>Order ID</th>
-                <td>{{ detailTarget.midtrans_order_id }}</td>
+                <td>{{ detailTarget.order_id }}</td>
               </tr>
               <tr>
                 <th>Tanggal</th>
@@ -219,6 +228,18 @@
         </div>
       </template>
     </SimpleModal>
+    <SimpleModal
+      id="confirmCancelModal"
+      title="Konfirmasi Pembatalan"
+      :visible="showCancelModal"
+      :buttons="cancelModalButtons"
+      @update:visible="showCancelModal = $event"
+      @button-click="handleCancelModalButton"
+    >
+      <template #body>
+        <div>Apakah Anda yakin ingin membatalkan transaksi ini?</div>
+      </template>
+    </SimpleModal>
   </div>
 </template>
 
@@ -265,6 +286,13 @@ export default {
       return `${m}:${s.toString().padStart(2, "0")}`;
     });
 
+    const showCancelModal = ref(false);
+    const cancelModalButtons = [
+      { label: "Batal", class: "btn-secondary", dismiss: true },
+      { label: "Ya, Batalkan", class: "btn-danger", dismiss: true },
+    ];
+    const cancelTargetId = ref(null);
+
     function isPaying(id) {
       return payingTransactionId.value === id;
     }
@@ -282,9 +310,23 @@ export default {
 
     function selectPayment(method) {
       selectedPayment.value = method;
+      // Update payment_method in database
       const tx = transactions.value.find(
         (t) => t.id === payingTransactionId.value
       );
+      if (tx) {
+        axios
+          .put(
+            `http://localhost:3001/api/transactionsHistory/method/${tx.id}`,
+            {
+              payment_method: method,
+            }
+          )
+          .catch(() => {
+            notif.show("error", "Gagal mengubah metode pembayaran");
+          });
+        tx.payment_method = method; // update local for immediate UI feedback
+      }
       paymentDetail.value = {
         qr: `${method.toUpperCase()}|${tx?.id}|${tx?.total_amount}`,
         number: method === "gopay" ? "0812-1234-5678" : "0813-4567-8987",
@@ -411,6 +453,20 @@ export default {
       }
     };
 
+    const showCancelConfirm = (id) => {
+      cancelTargetId.value = id;
+      showCancelModal.value = true;
+    };
+    const handleCancelModalButton = (btn) => {
+      if (btn.label === "Ya, Batalkan" && cancelTargetId.value) {
+        cancelTransaction(cancelTargetId.value);
+      }
+    };
+
+    function printInvoice(id) {
+      router.push(`/olshopv1/transaction-details/${id}`);
+    }
+
     return {
       transactions,
       formatDate,
@@ -435,6 +491,11 @@ export default {
       confirmPayment,
       isConfirmed,
       isVerifying,
+      showCancelModal,
+      cancelModalButtons,
+      showCancelConfirm,
+      handleCancelModalButton,
+      printInvoice,
     };
   },
 };

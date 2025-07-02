@@ -10,9 +10,11 @@ import TransactionHistory from "../pages/TransactionHistory.vue";
 import TransactionDetails from "../pages/TransactionDetails.vue";
 import AdminHome from "../pages/AdminHome.vue";
 import AdminProducts from "../pages/AdminProducts.vue";
+import AdminCategory from "../pages/AdminCategory.vue";
 import AdminStocks from "../pages/AdminStocks.vue";
 import AdminUsers from "../pages/AdminUsers.vue";
 import { useUserStore } from "../stores/UserStore";
+import { useLoadingStore } from "../stores/LoadingStore";
 
 const routes = [
   { path: "/", name: "Home", component: Home },
@@ -46,7 +48,7 @@ const routes = [
     path: "/olshopv1/transaction-details/:id",
     name: "TransactionDetails",
     component: TransactionDetails,
-    meta: { requiresAuth: true, role: "customer" },
+    meta: { requiresAuth: true, role: ["customer", "admin", "subadmin"] },
   },
   {
     path: "/olshopv1/cpanel",
@@ -58,6 +60,12 @@ const routes = [
     path: "/olshopv1/cpanel/products",
     name: "AdminProducts",
     component: AdminProducts,
+    meta: { requiresAuth: true, role: ["admin", "subadmin"] },
+  },
+  {
+    path: "/olshopv1/cpanel/categories",
+    name: "AdminCategory",
+    component: AdminCategory,
     meta: { requiresAuth: true, role: ["admin", "subadmin"] },
   },
   {
@@ -84,7 +92,9 @@ const router = createRouter({
   history: createWebHistory(),
   routes,
 });
+
 router.beforeEach((to, from, next) => {
+  useLoadingStore().start();
   const userStore = useUserStore();
 
   if (!userStore.isAuthenticated) {
@@ -115,6 +125,9 @@ router.beforeEach((to, from, next) => {
   }
 
   next();
+});
+router.afterEach(() => {
+  useLoadingStore().stop();
 });
 
 export default router;

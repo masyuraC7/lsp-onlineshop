@@ -14,6 +14,12 @@
         >Products</router-link
       >
       <router-link
+        to="/olshopv1/cpanel/categories"
+        class="nav-link d-inline text-white me-4"
+        active-class="active"
+        >Kategori</router-link
+      >
+      <router-link
         to="/olshopv1/cpanel/stocks"
         class="nav-link d-inline text-white me-4"
         active-class="active"
@@ -45,24 +51,21 @@
   </Navbar>
 </template>
 
-<script>
+<script setup>
 import Navbar from "./Navbar.vue";
 import { useUserStore } from "../stores/UserStore.js";
 import { useNotificationStore } from "../stores/NotificationStore.js";
+import { useRouter } from "vue-router";
 
-export default {
-  components: { Navbar },
-  methods: {
-    handleLogout() {
-      const userStore = useUserStore();
-      userStore.clearUser();
-      this.$router.push("/login");
+const router = useRouter();
+const userStore = useUserStore();
+const notifStore = useNotificationStore();
 
-      const notifStore = useNotificationStore();
-      notifStore.show("success", "Logout berhasil");
-    },
-  },
-};
+function handleLogout() {
+  userStore.clearUser();
+  router.push("/login");
+  notifStore.show("success", "Logout berhasil");
+}
 </script>
 
 <style scoped>

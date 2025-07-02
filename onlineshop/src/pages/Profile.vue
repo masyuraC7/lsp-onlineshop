@@ -2,7 +2,6 @@
   <div>
     <AdminNavbar v-if="userRole === 'admin' || userRole === 'subadmin'" />
     <CustomerNavbar v-else />
-
     <div class="container mt-4 mb-5" style="max-width: 700px">
       <h3 class="mb-4 text-center">Profil Pengguna</h3>
       <div v-if="!editMode">
@@ -79,84 +78,80 @@
       <form v-else @submit.prevent="saveProfile">
         <div class="row g-3">
           <div class="col-md-6">
-            <div class="form-group">
-              <label>Nama Lengkap</label>
-              <input
-                v-model="editUser.namaLengkap"
-                type="text"
-                class="form-control"
-              />
-            </div>
-            <div class="form-group">
-              <label>Username</label>
-              <input
-                v-model="editUser.username"
-                type="text"
-                class="form-control"
-              />
-            </div>
-            <div class="form-group">
-              <label>Email</label>
-              <input
-                v-model="editUser.email"
-                type="email"
-                class="form-control"
-              />
-            </div>
-            <div class="form-group">
-              <label>Tanggal Lahir</label>
-              <input
-                v-model="editUser.tglLahir"
-                type="date"
-                class="form-control"
-              />
-            </div>
-            <div class="form-group">
-              <label>Jenis Kelamin</label>
-              <select v-model="editUser.jenisKelamin" class="form-select">
-                <option value="Laki-laki">Laki-laki</option>
-                <option value="Perempuan">Perempuan</option>
-              </select>
-            </div>
+            <BaseInput
+              v-model="editUser.namaLengkap"
+              label="Nama Lengkap"
+              :error="errors.namaLengkap"
+              placeholder="Masukkan nama lengkap"
+            />
+            <BaseInput
+              v-model="editUser.username"
+              label="Username"
+              :error="errors.username"
+              placeholder="Masukkan username"
+            />
+            <BaseInput
+              v-model="editUser.email"
+              label="Email"
+              :error="errors.email"
+              placeholder="Masukkan email"
+              type="email"
+            />
+            <BaseInput
+              v-model="editUser.tglLahir"
+              label="Tanggal Lahir"
+              :error="errors.tglLahir"
+              type="date"
+            />
+            <BaseSelect
+              v-model="editUser.jenisKelamin"
+              label="Jenis Kelamin"
+              :error="errors.jenisKelamin"
+              placeholder="Pilih jenis kelamin"
+            >
+              <option value="Laki-laki">Laki-laki</option>
+              <option value="Perempuan">Perempuan</option>
+            </BaseSelect>
           </div>
           <div class="col-md-6">
-            <div class="form-group">
-              <label>Alamat</label>
-              <textarea
-                v-model="editUser.alamat"
-                class="form-control"
-                rows="3"
-              ></textarea>
-            </div>
-            <div class="form-group">
-              <label>Kota</label>
-              <input v-model="editUser.kota" type="text" class="form-control" />
-            </div>
-            <div class="form-group">
-              <label>No HP</label>
-              <input v-model="editUser.noHp" type="tel" class="form-control" />
-            </div>
-            <div class="form-group">
-              <label>Bank</label>
-              <input v-model="editUser.bank" type="text" class="form-control" />
-            </div>
-            <div class="form-group">
-              <label>No Rekening</label>
-              <input
-                v-model="editUser.noRek"
-                type="text"
-                class="form-control"
-              />
-            </div>
-            <div class="form-group">
-              <label>Role</label>
-              <input
-                v-model="editUser.role"
-                type="text"
-                class="form-control"
-                disabled
-              />
-            </div>
+            <BaseTextarea
+              v-model="editUser.alamat"
+              label="Alamat"
+              :error="errors.alamat"
+              placeholder="Masukkan alamat lengkap"
+              rows="3"
+            />
+            <BaseInput
+              v-model="editUser.kota"
+              label="Kota"
+              :error="errors.kota"
+              placeholder="Masukkan kota"
+            />
+            <BaseInput
+              v-model="editUser.noHp"
+              label="No HP"
+              :error="errors.noHp"
+              placeholder="Masukkan no HP"
+              type="tel"
+            />
+            <BaseInput
+              v-model="editUser.bank"
+              label="Bank"
+              :error="errors.bank"
+              placeholder="Masukkan nama bank"
+            />
+            <BaseInput
+              v-model="editUser.noRek"
+              label="No Rekening"
+              :error="errors.noRek"
+              placeholder="Masukkan nomor rekening"
+            />
+            <BaseInput
+              v-model="editUser.role"
+              label="Role"
+              :error="''"
+              disabled
+            />
           </div>
         </div>
         <div class="d-flex gap-2 justify-content-end mt-3">
@@ -255,165 +250,193 @@
   </div>
 </template>
 
-<script>
+<script setup>
 import CustomerNavbar from "../components/CustomerNavbar.vue";
 import AdminNavbar from "../components/AdminNavbar.vue";
 import SimpleModal from "../components/SimpleModal.vue";
+import BaseInput from "../components/BaseInput.vue";
+import BaseTextarea from "../components/BaseTextarea.vue";
+import BaseSelect from "../components/BaseSelect.vue";
 import axios from "axios";
 import { useUserStore } from "../stores/UserStore";
 import { useNotificationStore } from "../stores/NotificationStore";
+import { ref, computed, reactive, watch, onMounted } from "vue";
+import {
+  validateRequiredFields,
+  validateEmail,
+} from "../utils/validateForm.js";
 
-export default {
-  components: { CustomerNavbar, AdminNavbar, SimpleModal },
-  data() {
-    return {
-      user: {},
-      editUser: {},
-      editMode: false,
-      showPasswordModal: false,
-      passwordForm: {
-        oldPassword: "",
-        newPassword: "",
-        confirmPassword: "",
-      },
-      userId: null,
-      notifStore: useNotificationStore(),
-      userStore: useUserStore(),
-      loading: false,
-      cooldown: 0,
-      cooldownInterval: null,
-      passwordLoading: false,
-      passwordCooldown: 0,
-      passwordCooldownInterval: null,
-    };
-  },
-  computed: {
-    userRole() {
-      return this.userStore.user?.role || "";
-    },
-  },
-  methods: {
-    formatDate(dateStr) {
-      if (!dateStr) return "";
-      const date = new Date(dateStr);
-      const day = String(date.getDate()).padStart(2, "0");
-      const month = String(date.getMonth() + 1).padStart(2, "0");
-      const year = date.getFullYear();
-      return `${day}-${month}-${year}`;
-    },
-    formatGender(gender) {
-      if (!gender) return "";
-      if (gender === "L" || gender === "Laki-laki") return "Laki-laki";
-      if (gender === "P" || gender === "Perempuan") return "Perempuan";
-      return gender;
-    },
-    async fetchUser() {
-      this.userId = this.userStore.id;
-      try {
-        const res = await axios.get(
-          `http://localhost:3001/api/users/${this.userId}`
-        );
-        // Konversi gender ke string readable
-        const user = res.data;
-        user.jenisKelamin = this.formatGender(user.jenisKelamin);
-        this.user = user;
-      } catch (err) {
-        this.notifStore.show("error", "Gagal mengambil data user");
-      }
-    },
-    resetEdit() {
-      this.editUser = { ...this.user };
-      this.notifStore.show("success", "Edit mode telah direset");
-    },
-    async saveProfile() {
-      this.loading = true;
-      this.cooldown = 0;
-      const editUserToSave = { ...this.editUser };
-      if (editUserToSave.jenisKelamin === "Laki-laki")
-        editUserToSave.jenisKelamin = "L";
-      else if (editUserToSave.jenisKelamin === "Perempuan")
-        editUserToSave.jenisKelamin = "P";
+const userStore = useUserStore();
+const notifStore = useNotificationStore();
+const user = ref({});
+const editUser = ref({});
+const editMode = ref(false);
+const showPasswordModal = ref(false);
+const passwordForm = reactive({
+  oldPassword: "",
+  newPassword: "",
+  confirmPassword: "",
+});
+const userId = ref(null);
+const loading = ref(false);
+const cooldown = ref(0);
+let cooldownInterval = null;
+const passwordLoading = ref(false);
+const passwordCooldown = ref(0);
+let passwordCooldownInterval = null;
+const errors = reactive({});
 
-      try {
-        await axios.put(
-          `http://localhost:3001/api/users/${this.userId}`,
-          editUserToSave
-        );
-        this.user = { ...this.editUser };
-        this.user.jenisKelamin = this.formatGender(this.user.jenisKelamin);
-        this.editMode = false;
-        this.notifStore.show("success", "Profil berhasil diperbarui");
-      } catch (err) {
-        this.notifStore.show("error", "Gagal update profil");
-        this.cooldown = 3;
-        this.cooldownInterval = setInterval(() => {
-          if (this.cooldown > 0) this.cooldown--;
-          if (this.cooldown === 0) clearInterval(this.cooldownInterval);
-        }, 1000);
-      } finally {
-        this.loading = false;
+const userRole = computed(() => userStore.user?.role || "");
+
+function formatDate(dateStr) {
+  if (!dateStr) return "";
+  const date = new Date(dateStr);
+  const day = String(date.getDate()).padStart(2, "0");
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const year = date.getFullYear();
+  return `${day}-${month}-${year}`;
+}
+function formatGender(gender) {
+  if (!gender) return "";
+  if (gender === "L" || gender === "Laki-laki") return "Laki-laki";
+  if (gender === "P" || gender === "Perempuan") return "Perempuan";
+  return gender;
+}
+
+async function fetchUser() {
+  userId.value = userStore.id;
+  try {
+    const res = await axios.get(
+      `http://localhost:3001/api/users/${userId.value}`
+    );
+    const u = res.data;
+    u.jenisKelamin = formatGender(u.jenisKelamin);
+    user.value = u;
+  } catch (err) {
+    notifStore.show("error", "Gagal mengambil data user");
+  }
+}
+
+function resetEdit() {
+  editUser.value = { ...user.value };
+  notifStore.show("success", "Edit mode telah direset");
+}
+
+async function saveProfile() {
+  loading.value = true;
+  cooldown.value = 0;
+  Object.keys(errors).forEach((k) => (errors[k] = ""));
+  // Validasi reusable
+  const requiredFields = [
+    "namaLengkap",
+    "username",
+    "email",
+    "tglLahir",
+    "jenisKelamin",
+    "alamat",
+    "kota",
+    "noHp",
+    "bank",
+    "noRek",
+  ];
+  const newErrors = validateRequiredFields(editUser.value, requiredFields, {
+    namaLengkap: "Nama lengkap harus diisi",
+    username: "Username harus diisi",
+    email: "Email harus diisi",
+    tglLahir: "Tanggal lahir harus diisi",
+    jenisKelamin: "Jenis kelamin harus dipilih",
+    alamat: "Alamat harus diisi",
+    kota: "Kota harus diisi",
+    noHp: "No HP harus diisi",
+    bank: "Bank harus diisi",
+    noRek: "Nomor rekening harus diisi",
+  });
+  Object.assign(errors, newErrors);
+  const emailError = validateEmail(editUser.value.email);
+  if (emailError) errors.email = emailError;
+  if (Object.keys(errors).some((k) => errors[k])) {
+    notifStore.show("warning", "Lengkapi form dengan benar.");
+    loading.value = false;
+    return;
+  }
+  const editUserToSave = { ...editUser.value };
+  if (editUserToSave.jenisKelamin === "Laki-laki")
+    editUserToSave.jenisKelamin = "L";
+  else if (editUserToSave.jenisKelamin === "Perempuan")
+    editUserToSave.jenisKelamin = "P";
+  try {
+    await axios.put(
+      `http://localhost:3001/api/users/${userId.value}`,
+      editUserToSave
+    );
+    user.value = { ...editUser.value };
+    user.value.jenisKelamin = formatGender(user.value.jenisKelamin);
+    editMode.value = false;
+    notifStore.show("success", "Profil berhasil diperbarui");
+  } catch (err) {
+    notifStore.show("error", "Gagal update profil");
+    cooldown.value = 3;
+    cooldownInterval = setInterval(() => {
+      if (cooldown.value > 0) cooldown.value--;
+      if (cooldown.value === 0) clearInterval(cooldownInterval);
+    }, 1000);
+  } finally {
+    loading.value = false;
+  }
+}
+
+async function submitPasswordChange() {
+  if (
+    !passwordForm.oldPassword ||
+    !passwordForm.newPassword ||
+    !passwordForm.confirmPassword
+  ) {
+    notifStore.show("warning", "Semua field password harus diisi.");
+    return;
+  }
+  if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+    notifStore.show("warning", "Password baru dan konfirmasi tidak cocok.");
+    return;
+  }
+  passwordLoading.value = true;
+  passwordCooldown.value = 0;
+  try {
+    await axios.put(
+      `http://localhost:3001/api/users/${userId.value}/password`,
+      {
+        oldPassword: passwordForm.oldPassword,
+        newPassword: passwordForm.newPassword,
       }
-    },
-    async submitPasswordChange() {
-      if (
-        !this.passwordForm.oldPassword ||
-        !this.passwordForm.newPassword ||
-        !this.passwordForm.confirmPassword
-      ) {
-        this.notifStore.show("warning", "Semua field password harus diisi.");
-        return;
-      }
-      if (this.passwordForm.newPassword !== this.passwordForm.confirmPassword) {
-        this.notifStore.show(
-          "warning",
-          "Password baru dan konfirmasi tidak cocok."
-        );
-        return;
-      }
-      this.passwordLoading = true;
-      this.passwordCooldown = 0;
-      try {
-        await axios.put(
-          `http://localhost:3001/api/users/${this.userId}/password`,
-          {
-            oldPassword: this.passwordForm.oldPassword,
-            newPassword: this.passwordForm.newPassword,
-          }
-        );
-        this.notifStore.show("success", "Password berhasil diubah!");
-        this.showPasswordModal = false;
-        this.passwordForm = {
-          oldPassword: "",
-          newPassword: "",
-          confirmPassword: "",
-        };
-      } catch (err) {
-        this.notifStore.show(
-          "error",
-          err.response?.data?.error || "Gagal mengubah password"
-        );
-        this.passwordCooldown = 3;
-        this.passwordCooldownInterval = setInterval(() => {
-          if (this.passwordCooldown > 0) this.passwordCooldown--;
-          if (this.passwordCooldown === 0)
-            clearInterval(this.passwordCooldownInterval);
-        }, 1000);
-      } finally {
-        this.passwordLoading = false;
-      }
-    },
-  },
-  watch: {
-    editMode(val) {
-      if (val) {
-        this.editUser = { ...this.user };
-      }
-    },
-  },
-  mounted() {
-    this.fetchUser();
-  },
-};
+    );
+    notifStore.show("success", "Password berhasil diubah!");
+    showPasswordModal.value = false;
+    passwordForm.oldPassword = "";
+    passwordForm.newPassword = "";
+    passwordForm.confirmPassword = "";
+  } catch (err) {
+    notifStore.show(
+      "error",
+      err.response?.data?.error || "Gagal mengubah password"
+    );
+    passwordCooldown.value = 3;
+    passwordCooldownInterval = setInterval(() => {
+      if (passwordCooldown.value > 0) passwordCooldown.value--;
+      if (passwordCooldown.value === 0) clearInterval(passwordCooldownInterval);
+    }, 1000);
+  } finally {
+    passwordLoading.value = false;
+  }
+}
+
+watch(editMode, (val) => {
+  if (val) {
+    editUser.value = { ...user.value };
+  }
+});
+
+onMounted(() => {
+  fetchUser();
+});
 </script>
 
 <style scoped>

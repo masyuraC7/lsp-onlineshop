@@ -1,14 +1,11 @@
 <template>
-  <AdminNavbar />
-
+  <component :is="userRole === 'admin' ? AdminNavbar : CustomerNavbar" />
   <div class="container mt-5">
     <div ref="printArea">
-      <h2 class="mb-4">Detail Transaksi</h2>
-
+      <h3 class="mb-4">Detail Transaksi</h3>
       <div v-if="!transaction">
         <p class="text-muted">Memuat detail transaksi...</p>
       </div>
-
       <div v-else>
         <div class="mb-3">
           <p><strong>ID Transaksi:</strong> {{ transaction.id || "-" }}</p>
@@ -34,7 +31,6 @@
             {{ transaction.midtrans_order_id || "-" }}
           </p>
         </div>
-
         <table class="table table-bordered align-middle text-center">
           <thead class="table-light">
             <tr>
@@ -67,53 +63,57 @@
   </div>
 </template>
 
-<script>
+<script setup>
 import axios from "axios";
 import { useRoute } from "vue-router";
-import { onMounted, ref } from "vue";
-import AdminNavbar from "../components/CustomerNavbar.vue";
+import { onMounted, ref, computed } from "vue";
+import AdminNavbar from "../components/AdminNavbar.vue";
+import CustomerNavbar from "../components/CustomerNavbar.vue";
 import html2pdf from "html2pdf.js";
+import { useNotificationStore } from "../stores/NotificationStore";
+import { useUserStore } from "../stores/userStore";
 
 const printArea = ref(null);
+const route = useRoute();
+const transaction = ref(null);
+const notifStore = useNotificationStore();
+const userStore = useUserStore();
+const userRole = computed(() => userStore.user?.role || "customer");
 
-export default {
-  components: { AdminNavbar },
-  setup() {
-    const route = useRoute();
-    const transaction = ref(null);
+onMounted(async () => {
+  try {
+    const { id } = route.params;
+    const res = await axios.get(
+      `http://localhost:3001/api/transaction-details/${id}`
+    );
+    transaction.value = res.data;
+  } catch (err) {
+    notifStore.show("error", "Gagal memuat detail transaksi");
+  }
+});
 
-    onMounted(async () => {
-      try {
-        const { id } = route.params;
-        const res = await axios.get(
-          `http://localhost:3001/api/transaction-details/${id}`
-        );
-        transaction.value = res.data;
-      } catch (err) {
-        console.error("Gagal memuat detail transaksi:", err);
-      }
+function cetakPDF() {
+  const element = printArea.value;
+  if (!element) {
+    notifStore.show("error", "Area cetak tidak ditemukan");
+    return;
+  }
+  html2pdf()
+    .from(element)
+    .set({
+      margin: 1,
+      filename: `Bukti_Transaksi_${transaction.value?.id || "-"}.pdf`,
+      html2canvas: { scale: 2 },
+      jsPDF: { unit: "cm", format: "a4", orientation: "portrait" },
+    })
+    .outputPdf("bloburl")
+    .then((pdfUrl) => {
+      window.open(pdfUrl, "_blank");
+    })
+    .catch(() => {
+      notifStore.show("error", "Gagal membuat preview PDF");
     });
-
-    const cetakPDF = () => {
-      const element = printArea.value;
-      html2pdf()
-        .from(element)
-        .set({
-          margin: 1,
-          filename: `Bukti_Transaksi_${transaction.value.id}.pdf`,
-          html2canvas: { scale: 2 },
-          jsPDF: { unit: "cm", format: "a4", orientation: "portrait" },
-        })
-        .save();
-    };
-
-    return {
-      transaction,
-      printArea,
-      cetakPDF,
-    };
-  },
-};
+}
 </script>
 
 <style scoped>

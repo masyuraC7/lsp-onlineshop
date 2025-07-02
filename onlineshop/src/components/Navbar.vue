@@ -75,51 +75,45 @@
   </nav>
 </template>
 
-<script>
-export default {
-  props: {
-    logo: {
-      type: Boolean,
-      default: false,
-    },
-    urlLogo: {
-      type: String,
-      default: "",
-    },
-    titleWithLink: {
-      type: Boolean,
-      default: true,
-    },
-    showAccount: {
-      type: Boolean,
-      default: false,
-    },
-  },
-  data() {
-    return {
-      accountDropdownOpen: false,
-    };
-  },
-  methods: {
-    toggleAccountDropdown() {
-      this.accountDropdownOpen = !this.accountDropdownOpen;
-    },
-    handleClickOutside(event) {
-      if (this.accountDropdownOpen && !this.$el.contains(event.target)) {
-        this.accountDropdownOpen = false;
-      }
-    },
-  },
-  mounted() {
-    document.addEventListener("click", this.handleClickOutside);
-  },
-  beforeUnmount() {
-    document.removeEventListener("click", this.handleClickOutside);
-  },
-};
+<script setup>
+import { ref, onMounted, onBeforeUnmount } from "vue";
+
+const props = defineProps({
+  logo: { type: Boolean, default: false },
+  urlLogo: { type: String, default: "" },
+  titleWithLink: { type: Boolean, default: true },
+  showAccount: { type: Boolean, default: false },
+});
+
+const accountDropdownOpen = ref(false);
+
+function toggleAccountDropdown() {
+  accountDropdownOpen.value = !accountDropdownOpen.value;
+}
+
+function handleClickOutside(event) {
+  const nav =
+    event.currentTarget?.querySelector("nav") ||
+    document.querySelector("nav.navbar");
+  if (accountDropdownOpen.value && nav && !nav.contains(event.target)) {
+    accountDropdownOpen.value = false;
+  }
+}
+
+onMounted(() => {
+  document.addEventListener("click", handleClickOutside);
+});
+onBeforeUnmount(() => {
+  document.removeEventListener("click", handleClickOutside);
+});
 </script>
 
 <style scoped>
+.navbar {
+  z-index: 1000 !important;
+  position: relative;
+}
+
 .nav-link {
   transition: color 0.3s ease;
   color: #fff !important;

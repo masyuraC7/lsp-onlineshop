@@ -8,9 +8,12 @@
       role="dialog"
       :aria-labelledby="id + 'Label'"
       aria-modal="true"
-      style="background: rgba(0,0,0,0.5);"
+      style="background: rgba(0, 0, 0, 0.5)"
     >
-      <div :class="['modal-dialog', 'modal-dialog-centered', sizeClass]" role="document">
+      <div
+        :class="['modal-dialog', 'modal-dialog-centered', sizeClass]"
+        role="document"
+      >
         <div class="modal-content">
           <div class="modal-header">
             <h5 class="modal-title" :id="id + 'Label'">{{ title }}</h5>
@@ -42,28 +45,25 @@
   </transition>
 </template>
 
-<script>
-export default {
-  props: {
-    id: { type: String, required: true },
-    title: { type: String, required: true },
-    size: { type: String, default: 'md' },
-    closable: { type: Boolean, default: true },
-    buttons: { type: Array, default: () => [] },
-    visible: { type: Boolean, default: false },
-  },
-  computed: {
-    sizeClass() {
-      return `modal-dialog-${this.size}`;
-    },
-  },
-  methods: {
-    onButtonClick(btn) {
-      if (typeof btn.action === 'function') btn.action();
-      if (btn.dismiss) this.$emit('update:visible', false);
-    },
-  },
-};
+<script setup>
+import { computed } from 'vue';
+const props = defineProps({
+  id: { type: String, required: true },
+  title: { type: String, required: true },
+  size: { type: String, default: 'md' },
+  closable: { type: Boolean, default: true },
+  buttons: { type: Array, default: () => [] },
+  visible: { type: Boolean, default: false },
+});
+const emit = defineEmits(['update:visible', 'button-click']);
+
+const sizeClass = computed(() => `modal-dialog-${props.size}`);
+
+function onButtonClick(btn) {
+  emit('button-click', btn);
+  if (typeof btn.action === 'function') btn.action();
+  if (btn.dismiss) emit('update:visible', false);
+}
 </script>
 
 <style scoped>
@@ -75,13 +75,16 @@ export default {
   display: none;
 }
 /* Animasi fade in/out modal */
-.modal-fade-enter-active, .modal-fade-leave-active {
+.modal-fade-enter-active,
+.modal-fade-leave-active {
   transition: opacity 0.3s;
 }
-.modal-fade-enter-from, .modal-fade-leave-to {
+.modal-fade-enter-from,
+.modal-fade-leave-to {
   opacity: 0;
 }
-.modal-fade-enter-to, .modal-fade-leave-from {
+.modal-fade-enter-to,
+.modal-fade-leave-from {
   opacity: 1;
 }
 </style>

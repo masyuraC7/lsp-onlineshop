@@ -54,75 +54,64 @@
     </div>
   </div>
 </template>
-<script>
+
+<script setup>
+import { ref, computed, watch, onMounted } from "vue";
 import axios from "axios";
 import ProductCard from "../components/ProductCard.vue";
 import { useUserStore } from "../stores/UserStore.js";
 import CustomerNavbar from "../components/CustomerNavbar.vue";
+import { useNotificationStore } from "../stores/NotificationStore.js";
 
-export default {
-  components: { CustomerNavbar, ProductCard },
-  data() {
-    return {
-      kategori: "",
-      produk: [],
-      kategoriList: [],
-      searchQuery: "",
-    };
-  },
-  computed: {
-    userStore() {
-      return useUserStore();
-    },
-    isLoggedIn() {
-      return this.userStore.isAuthenticated;
-    },
-    role() {
-      return this.userStore.role;
-    },
-    produkTersaring() {
-      return this.produk.filter((p) => {
-        const cocokKategori =
-          this.kategori === "" || p.category === this.kategori;
-        const cocokSearch =
-          this.searchQuery === "" ||
-          p.name.toLowerCase().includes(this.searchQuery.toLowerCase()) ||
-          p.description.toLowerCase().includes(this.searchQuery.toLowerCase());
-        return cocokKategori && cocokSearch;
-      });
-    },
-  },
-  methods: {
-    async ambilProduk() {
-      try {
-        let url = "http://localhost:3001/api/products";
-        if (this.kategori) {
-          url += `?category=${encodeURIComponent(this.kategori)}`;
-        }
-        const res = await axios.get(url);
-        this.produk = res.data;
-      } catch (error) {
-        console.error("Gagal mengambil produk:", error);
-      }
-    },
-    async ambilKategori() {
-      try {
-        const res = await axios.get("http://localhost:3001/api/categories");
-        this.kategoriList = res.data;
-      } catch (error) {
-        console.error("Gagal mengambil kategori:", error);
-      }
-    },
-  },
-  watch: {
-    kategori() {
-      this.ambilProduk(); // Refetch saat kategori berubah
-    },
-  },
-  mounted() {
-    this.userStore.initFromLocalStorage();
-    this.ambilKategori();
-    this.ambilProduk();
-  },
-};
+const kategori = ref("");
+const produk = ref([]);
+const kategoriList = ref([]);
+const searchQuery = ref("");
+
+const userStore = useUserStore();
+const notifStore = useNotificationStore();
+const isLoggedIn = computed(() => userStore.isAuthenticated);
+const role = computed(() => userStore.role);
+
+const produkTersaring = computed(() => {
+  return produk.value.filter((p) => {
+    const cocokKategori =
+      kategori.value === "" || p.category === kategori.value;
+    const cocokSearch =
+      searchQuery.value === "" ||
+      p.name.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
+      p.description.toLowerCase().includes(searchQuery.value.toLowerCase());
+    return cocokKategori && cocokSearch;
+  });
+});
+
+async function ambilProduk() {
+  try {
+    let url = "http://localhost:3001/api/products";
+    if (kategori.value) {
+      url += `?category=${encodeURIComponent(kategori.value)}`;
+    }
+    const res = await axios.get(url);
+    produk.value = res.data;
+  } catch (error) {
+    notifStore.show("error", "Gagal mengambil produk");
+  }
+}
+
+async function ambilKategori() {
+  try {
+    const res = await axios.get("http://localhost:3001/api/categories");
+    kategoriList.value = res.data;
+  } catch (error) {
+    notifStore.show("error", "Gagal mengambil kategori");
+  }
+}
+
+watch(kategori, ambilProduk);
+
+onMounted(() => {
+  userStore.initFromLocalStorage();
+  ambilKategori();
+  ambilProduk();
+});
 </script>

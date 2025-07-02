@@ -1,6 +1,6 @@
-const express = require("express");
+import express from "express";
+import db from "../db.js";
 const router = express.Router();
-const db = require("../db");
 
 // Get all transaction history (admin)
 router.get("/", async (req, res) => {
@@ -48,7 +48,6 @@ router.delete("/:id", async (req, res) => {
 // Cancel a transaction
 router.put("/cancel/:id", async (req, res) => {
   const { id } = req.params;
-
   try {
     const [result] = await db.execute(
       `UPDATE transaction_history
@@ -88,4 +87,22 @@ router.put("/pay/:id", async (req, res) => {
   }
 });
 
-module.exports = router;
+// Update payment method
+router.put("/method/:id", async (req, res) => {
+  const { id } = req.params;
+  const { payment_method } = req.body;
+  try {
+    const [result] = await db.execute(
+      `UPDATE transaction_history SET payment_method = ? WHERE id = ?`,
+      [payment_method, id]
+    );
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: "Transaksi tidak ditemukan" });
+    }
+    res.json({ message: "Metode pembayaran berhasil diubah" });
+  } catch (err) {
+    res.status(500).json({ error: "Gagal mengubah metode pembayaran" });
+  }
+});
+
+export default router;

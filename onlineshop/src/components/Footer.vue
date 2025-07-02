@@ -4,6 +4,6 @@
   </footer>
 </template>
 
-<script>
-export default {};
+<script setup>
+// No logic needed for Footer
 </script>

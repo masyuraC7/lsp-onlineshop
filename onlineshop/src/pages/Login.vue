@@ -44,67 +44,58 @@
   </div>
 </template>
 
-<script>
+<script setup>
+import { ref, reactive } from "vue";
 import axios from "axios";
 import Navbar from "../components/Navbar.vue";
 import { useNotificationStore } from "../stores/NotificationStore.js";
 import { useUserStore } from "../stores/UserStore.js";
+import { useRouter } from "vue-router";
 
-export default {
-  components: { Navbar, Notification },
-  data() {
-    return {
-      loading: false,
-      form: {
-        identifier: "",
-        password: "",
-      },
-      notif: {
-        visible: false,
-        type: "success",
-        message: "",
-        duration: 4000,
-      },
-      errors: {},
-    };
-  },
-  methods: {
-    async handleLogin() {
-      const notifStore = useNotificationStore();
-      const userStore = useUserStore();
-      this.errors = {};
-      this.loading = true;
+const notifStore = useNotificationStore();
+const userStore = useUserStore();
+const router = useRouter();
 
-      if (!this.form.identifier)
-        this.errors.identifier = "Username/email harus diisi";
-      if (!this.form.password) this.errors.password = "Password harus diisi";
+const loading = ref(false);
+const form = reactive({
+  identifier: "",
+  password: "",
+});
+const errors = reactive({});
 
-      if (Object.keys(this.errors).length > 0) {
-        this.loading = false;
-        return;
-      }
+async function handleLogin() {
+  Object.keys(errors).forEach((k) => (errors[k] = ""));
+  loading.value = true;
 
-      try {
-        const res = await axios.post("http://localhost:3001/api/auth/login", {
-          identifier: this.form.identifier, // email atau username
-          password: this.form.password,
-        });
+  if (!form.identifier) errors.identifier = "Username/email harus diisi";
+  if (!form.password) errors.password = "Password harus diisi";
 
-        const { id, nama, username, role, message } = res.data;
+  if (Object.keys(errors).some((k) => errors[k])) {
+    loading.value = false;
+    return;
+  }
 
-        userStore.setUser({ id, nama, username, role });
-
-        notifStore.show("success", message);
-
-        if (role === "admin") this.$router.push("/olshopv1/cpanel");
-        else if (role === "customer") this.$router.push("/olshopv1/products");
-        else this.$router.push("/");
-      } catch (err) {
-        notifStore.show("error", err.response?.data?.error || "Login gagal");
-      } finally {
-        this.loading = false;
-      }
-    },
-  },
-};
+  try {
+    const res = await axios.post("http://localhost:3001/api/auth/login", {
+      identifier: form.identifier,
+      password: form.password,
+    });
+    const { id, nama, username, role, message } = res.data;
+    userStore.setUser({ id, nama, username, role });
+    notifStore.show("success", message);
+    form.identifier = "";
+    form.password = "";
+    Object.keys(errors).forEach((k) => (errors[k] = ""));
+    if (role === "admin") router.push("/olshopv1/cpanel");
+    else if (role === "customer") router.push("/olshopv1/products");
+    else router.push("/");
+  } catch (err) {
+    let msg = "Login gagal";
+    if (err.response?.data?.error) msg = err.response.data.error;
+    else if (err.message) msg = err.message;
+    notifStore.show("error", msg);
+  } finally {
+    loading.value = false;
+  }
+}
 </script>

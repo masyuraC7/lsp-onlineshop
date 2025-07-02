@@ -1,4 +1,4 @@
-const mysql = require("mysql2/promise");
+import mysql from "mysql2/promise";
 
 const conn = mysql.createPool({
   host: "localhost",
@@ -10,4 +10,4 @@ const conn = mysql.createPool({
   queueLimit: 0,
 });
 
-module.exports = conn;
+export default conn;

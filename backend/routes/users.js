@@ -1,7 +1,7 @@
-const bcrypt = require("bcrypt");
-const express = require("express");
+import bcrypt from "bcrypt";
+import express from "express";
+import db from "../db.js";
 const router = express.Router();
-const db = require("../db");
 
 // Get all users (for admin)
 router.get("/", async (req, res) => {
@@ -46,7 +46,6 @@ router.put("/:id", async (req, res) => {
     bank,
     noRek,
   } = req.body;
-
   if (tglLahir && tglLahir.includes("T")) {
     try {
       const d = new Date(tglLahir);
@@ -88,10 +87,8 @@ router.put("/:id/password", async (req, res) => {
     if (users.length === 0)
       return res.status(404).json({ error: "User tidak ditemukan" });
     const user = users[0];
-
     const valid = await bcrypt.compare(oldPassword, user.password);
     if (!valid) return res.status(400).json({ error: "Password lama salah" });
-
     const hashed = await bcrypt.hash(newPassword, 10);
     await db.execute("UPDATE users SET password=? WHERE id=?", [hashed, id]);
     res.json({ message: "Password berhasil diubah" });
@@ -114,4 +111,4 @@ router.delete("/:id", async (req, res) => {
   }
 });
 
-module.exports = router;
+export default router;

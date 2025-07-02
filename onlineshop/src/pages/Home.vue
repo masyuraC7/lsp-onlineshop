@@ -58,6 +58,7 @@
     :buttons="modalButtons"
     :visible="modalVisible"
     @update:visible="modalVisible = $event"
+    @button-click="handleModalButton"
   >
     <template #body>
       Untuk menambahkan produk ke keranjang, silakan login terlebih dahulu.
@@ -65,83 +66,79 @@
   </SimpleModal>
 </template>
 
-<script>
+<script setup>
+import { ref, computed, watch, onMounted } from "vue";
 import axios from "axios";
 import Navbar from "../components/Navbar.vue";
 import ProductCard from "../components/ProductCard.vue";
 import SimpleModal from "../components/SimpleModal.vue";
+import { useNotificationStore } from "../stores/NotificationStore.js";
+import { useRouter } from "vue-router";
 
-export default {
-  components: { Navbar, ProductCard, SimpleModal },
-  data() {
-    return {
-      kategori: "",
-      produk: [],
-      kategoriList: [],
-      searchQuery: "",
-      modalVisible: false,
-      modalButtons: [
-        { label: "Lihat-lihat Dulu", class: "btn-secondary", dismiss: true },
-        {
-          label: "Login Sekarang",
-          class: "btn-primary",
-          dismiss: true,
-          action: this.goToLogin,
-        },
-      ],
-    };
+const kategori = ref("");
+const produk = ref([]);
+const kategoriList = ref([]);
+const searchQuery = ref("");
+const modalVisible = ref(false);
+const router = useRouter();
+const notifStore = useNotificationStore();
+
+const modalButtons = [
+  { label: "Lihat-lihat Dulu", class: "btn-secondary", dismiss: true },
+  {
+    label: "Login Sekarang",
+    class: "btn-primary",
+    dismiss: true,
   },
-  methods: {
-    showLoginModal() {
-      this.modalVisible = true;
-    },
-    goToLogin() {
-      setTimeout(() => {
-        this.$router.push("/login");
-      }, 200);
-    },
-    async ambilProduk() {
-      try {
-        let url = "http://localhost:3001/api/products";
-        if (this.kategori) {
-          url += `?category=${encodeURIComponent(this.kategori)}`;
-        }
-        const res = await axios.get(url);
-        this.produk = res.data;
-      } catch (error) {
-        console.error("Gagal mengambil produk:", error);
-      }
-    },
-    async ambilKategori() {
-      try {
-        const res = await axios.get("http://localhost:3001/api/categories");
-        this.kategoriList = res.data;
-      } catch (error) {
-        console.error("Gagal mengambil kategori:", error);
-      }
-    },
-  },
-  watch: {
-    kategori() {
-      this.ambilProduk(); // Refetch saat kategori berubah
-    },
-  },
-  mounted() {
-    this.ambilKategori();
-    this.ambilProduk();
-  },
-  computed: {
-    produkTersaring() {
-      return this.produk.filter((p) => {
-        const cocokKategori =
-          this.kategori === "" || p.category === this.kategori;
-        const cocokSearch =
-          this.searchQuery === "" ||
-          p.name.toLowerCase().includes(this.searchQuery.toLowerCase()) ||
-          p.description.toLowerCase().includes(this.searchQuery.toLowerCase());
-        return cocokKategori && cocokSearch;
-      });
-    },
-  },
-};
+];
+
+function showLoginModal() {
+  modalVisible.value = true;
+}
+function goToLogin() {
+  setTimeout(() => {
+    router.push("/login");
+  }, 200);
+}
+async function ambilProduk() {
+  try {
+    let url = "http://localhost:3001/api/products";
+    if (kategori.value) {
+      url += `?category=${encodeURIComponent(kategori.value)}`;
+    }
+    const res = await axios.get(url);
+    produk.value = res.data;
+  } catch (error) {
+    notifStore.show("error", "Gagal mengambil produk");
+  }
+}
+async function ambilKategori() {
+  try {
+    const res = await axios.get("http://localhost:3001/api/categories");
+    kategoriList.value = res.data;
+  } catch (error) {
+    notifStore.show("error", "Gagal mengambil kategori");
+  }
+}
+function handleModalButton(btn) {
+  if (btn.label === "Login Sekarang") {
+    goToLogin();
+  }
+}
+watch(kategori, ambilProduk);
+onMounted(() => {
+  ambilKategori();
+  ambilProduk();
+});
+const produkTersaring = computed(() => {
+  return produk.value.filter((p) => {
+    const cocokKategori =
+      kategori.value === "" || p.category === kategori.value;
+    const cocokSearch =
+      searchQuery.value === "" ||
+      p.name.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
+      p.description.toLowerCase().includes(searchQuery.value.toLowerCase());
+    return cocokKategori && cocokSearch;
+  });
+});
 </script>

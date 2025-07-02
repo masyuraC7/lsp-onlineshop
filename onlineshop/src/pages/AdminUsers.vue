@@ -87,118 +87,112 @@
   </div>
 </template>
 
-<script>
+<script setup>
 import AdminNavbar from "../components/AdminNavbar.vue";
 import SimpleModal from "../components/SimpleModal.vue";
 import axios from "axios";
+import { ref, onMounted } from "vue";
 import { useNotificationStore } from "../stores/NotificationStore";
 
-export default {
-  components: { AdminNavbar, SimpleModal },
-  data() {
-    return {
-      users: [],
-      showDeleteModal: false,
-      deleteTarget: null,
-      notifStore: useNotificationStore(),
-      showViewModal: false,
-      viewTarget: null,
-    };
-  },
-  methods: {
-    async fetchUsers() {
-      try {
-        const res = await axios.get("http://localhost:3001/api/users");
-        this.users = res.data;
-      } catch (err) {
-        this.users = [];
-      }
-    },
-    formatDate(str) {
-      if (!str) return "";
-      // Support timestamp, string, Date
-      const d = typeof str === "number" ? new Date(str * 1000) : new Date(str);
-      return d.toLocaleString("id-ID", {
-        year: "numeric",
-        month: "2-digit",
-        day: "2-digit",
-        hour: "2-digit",
-        minute: "2-digit",
-        second: "2-digit",
-        hour12: false,
-      });
-    },
-    viewUser(user) {
-      this.viewTarget = user;
-      this.showViewModal = true;
-    },
-    confirmDelete(user) {
-      this.deleteTarget = user;
-      this.showDeleteModal = true;
-    },
-    async deleteUser() {
-      if (!this.deleteTarget) return;
-      try {
-        await axios.delete(
-          `http://localhost:3001/api/users/${this.deleteTarget.id}`
-        );
-        this.notifStore.add({
-          title: "Sukses",
-          message: `User ${this.deleteTarget.username} berhasil dihapus`,
-          type: "success",
-        });
-        this.showDeleteModal = false;
-        this.fetchUsers();
-      } catch (err) {
-        this.notifStore.add({
-          title: "Gagal",
-          message: `Gagal menghapus user ${this.deleteTarget.username}`,
-          type: "danger",
-        });
-      }
-    },
-    userFields(user) {
-      // Tampilkan semua field kecuali password
-      const exclude = ["password"];
-      const map = {
-        id: "ID",
-        namaLengkap: "Nama Lengkap",
-        full_name: "Nama Lengkap",
-        username: "Username",
-        email: "Email",
-        tglLahir: "Tanggal Lahir",
-        birth_date: "Tanggal Lahir",
-        jenisKelamin: "Jenis Kelamin",
-        gender: "Jenis Kelamin",
-        alamat: "Alamat",
-        address: "Alamat",
-        kota: "Kota",
-        city: "Kota",
-        noHp: "No HP",
-        phone: "No HP",
-        bank: "Bank",
-        bank_name: "Bank",
-        noRek: "No Rekening",
-        bank_account: "No Rekening",
-        role: "Role",
-        created_at: "Tanggal Daftar",
-      };
-      const result = {};
-      for (const key in user) {
-        if (exclude.includes(key)) continue;
-        let label = map[key] || key;
-        let val = user[key];
-        if (key === "created_at" || key === "tglLahir" || key === "birth_date")
-          val = this.formatDate(val);
-        result[label] = val;
-      }
-      return result;
-    },
-  },
-  mounted() {
-    this.fetchUsers();
-  },
+const users = ref([]);
+const showDeleteModal = ref(false);
+const deleteTarget = ref(null);
+const notifStore = useNotificationStore();
+const showViewModal = ref(false);
+const viewTarget = ref(null);
+
+const fetchUsers = async () => {
+  try {
+    const res = await axios.get("http://localhost:3001/api/users");
+    users.value = res.data;
+  } catch (err) {
+    users.value = [];
+    notifStore.show("error", "Gagal memuat data pengguna");
+  }
 };
+
+function formatDate(str) {
+  if (!str) return "";
+  const d = typeof str === "number" ? new Date(str * 1000) : new Date(str);
+  return d.toLocaleString("id-ID", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
+  });
+}
+
+function viewUser(user) {
+  viewTarget.value = user;
+  showViewModal.value = true;
+}
+
+function confirmDelete(user) {
+  deleteTarget.value = user;
+  showDeleteModal.value = true;
+}
+
+async function deleteUser() {
+  if (!deleteTarget.value) return;
+  try {
+    await axios.delete(
+      `http://localhost:3001/api/users/${deleteTarget.value.id}`
+    );
+    notifStore.show(
+      "success",
+      `User ${deleteTarget.value.username} berhasil dihapus`
+    );
+    showDeleteModal.value = false;
+    fetchUsers();
+  } catch (err) {
+    notifStore.show(
+      "error",
+      `Gagal menghapus user ${deleteTarget.value.username}`
+    );
+  }
+}
+
+function userFields(user) {
+  const exclude = ["password"];
+  const map = {
+    id: "ID",
+    namaLengkap: "Nama Lengkap",
+    full_name: "Nama Lengkap",
+    username: "Username",
+    email: "Email",
+    tglLahir: "Tanggal Lahir",
+    birth_date: "Tanggal Lahir",
+    jenisKelamin: "Jenis Kelamin",
+    gender: "Jenis Kelamin",
+    alamat: "Alamat",
+    address: "Alamat",
+    kota: "Kota",
+    city: "Kota",
+    noHp: "No HP",
+    phone: "No HP",
+    bank: "Bank",
+    bank_name: "Bank",
+    noRek: "No Rekening",
+    bank_account: "No Rekening",
+    role: "Role",
+    created_at: "Tanggal Daftar",
+  };
+  const result = {};
+  for (const key in user) {
+    if (exclude.includes(key)) continue;
+    let label = map[key] || key;
+    let val = user[key];
+    if (key === "created_at" || key === "tglLahir" || key === "birth_date")
+      val = formatDate(val);
+    result[label] = val;
+  }
+  return result;
+}
+
+onMounted(fetchUsers);
 </script>
 
 <style scoped>

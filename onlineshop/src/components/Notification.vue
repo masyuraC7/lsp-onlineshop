@@ -45,129 +45,114 @@
   </div>
 </template>
 
-<script>
+<script setup>
 import { useNotificationStore } from "../stores/NotificationStore.js";
 import { watch, reactive, onUnmounted } from "vue";
 
-export default {
-  setup() {
-    const notifStore = useNotificationStore();
-    const progressMap = reactive({});
-    const timerMap = {}; 
-    const remainingMap = {};
-    const totalMap = {}; 
-    const pausedAtMap = {}; 
+const notifStore = useNotificationStore();
+const progressMap = reactive({});
+const timerMap = {};
+const remainingMap = {};
+const totalMap = {};
+const pausedAtMap = {};
 
-    const TICK = 80;
+const TICK = 80;
 
-    const startProgress = (notif) => {
-      if (timerMap[notif.id]) return;
-      const total = notif.duration || 4000;
-      totalMap[notif.id] = total;
-      remainingMap[notif.id] = total;
-      progressMap[notif.id] = 100;
-      let lastUpdate = Date.now();
-      timerMap[notif.id] = setInterval(() => {
-        const now = Date.now();
-        const elapsed = now - lastUpdate;
-        lastUpdate = now;
-        remainingMap[notif.id] -= elapsed;
-        if (remainingMap[notif.id] < 0) remainingMap[notif.id] = 0;
-        progressMap[notif.id] =
-          (remainingMap[notif.id] / totalMap[notif.id]) * 100;
-        if (remainingMap[notif.id] <= 0) {
-          clearInterval(timerMap[notif.id]);
-          delete timerMap[notif.id];
-          delete progressMap[notif.id];
-          delete remainingMap[notif.id];
-          delete totalMap[notif.id];
-          delete pausedAtMap[notif.id];
-          notifStore.remove(notif.id);
-        }
-      }, TICK);
-    };
-
-    watch(
-      () => notifStore.notifications,
-      (newVal) => {
-        newVal.forEach((notif) => {
-          if (!(notif.id in progressMap)) {
-            startProgress(notif);
-          }
-        });
-      },
-      { immediate: true, deep: true }
-    );
-
-    const remove = (id) => {
-      clearInterval(timerMap[id]);
-      delete timerMap[id];
-      delete progressMap[id];
-      delete remainingMap[id];
-      delete totalMap[id];
-      delete pausedAtMap[id];
-      notifStore.remove(id);
-    };
-
-    const pause = (id) => {
-      if (timerMap[id]) {
-        clearInterval(timerMap[id]);
-        timerMap[id] = null;
-        pausedAtMap[id] = Date.now();
-      }
-    };
-    const resume = (id) => {
-      if (!timerMap[id] && remainingMap[id] > 0) {
-        let lastUpdate = Date.now();
-        timerMap[id] = setInterval(() => {
-          const now = Date.now();
-          const elapsed = now - lastUpdate;
-          lastUpdate = now;
-          remainingMap[id] -= elapsed;
-          if (remainingMap[id] < 0) remainingMap[id] = 0;
-          progressMap[id] = (remainingMap[id] / totalMap[id]) * 100;
-          if (remainingMap[id] <= 0) {
-            clearInterval(timerMap[id]);
-            delete timerMap[id];
-            delete progressMap[id];
-            delete remainingMap[id];
-            delete totalMap[id];
-            delete pausedAtMap[id];
-            notifStore.remove(id);
-          }
-        }, TICK);
-      }
-    };
-
-    onUnmounted(() => {
-      Object.values(timerMap).forEach(clearInterval);
-    });
-
-    const alertClass = (type) =>
-      ({
-        success: "alert-success",
-        warning: "alert-warning",
-        error: "alert-danger",
-      }[type] || "alert-primary");
-
-    const iconClass = (type) =>
-      ({
-        success: "bi bi-check-circle-fill text-success",
-        warning: "bi bi-exclamation-triangle-fill text-warning",
-        error: "bi bi-x-circle-fill text-danger",
-      }[type] || "bi bi-info-circle-fill text-primary");
-
-    return {
-      notifStore,
-      progressMap,
-      alertClass,
-      iconClass,
-      remove,
-      pause,
-      resume,
-    };
-  },
+const startProgress = (notif) => {
+  if (timerMap[notif.id]) return;
+  const total = notif.duration || 4000;
+  totalMap[notif.id] = total;
+  remainingMap[notif.id] = total;
+  progressMap[notif.id] = 100;
+  let lastUpdate = Date.now();
+  timerMap[notif.id] = setInterval(() => {
+    const now = Date.now();
+    const elapsed = now - lastUpdate;
+    lastUpdate = now;
+    remainingMap[notif.id] -= elapsed;
+    if (remainingMap[notif.id] < 0) remainingMap[notif.id] = 0;
+    progressMap[notif.id] = (remainingMap[notif.id] / totalMap[notif.id]) * 100;
+    if (remainingMap[notif.id] <= 0) {
+      clearInterval(timerMap[notif.id]);
+      delete timerMap[notif.id];
+      delete progressMap[notif.id];
+      delete remainingMap[notif.id];
+      delete totalMap[notif.id];
+      delete pausedAtMap[notif.id];
+      notifStore.remove(notif.id);
+    }
+  }, TICK);
 };
+
+watch(
+  () => notifStore.notifications,
+  (newVal) => {
+    newVal.forEach((notif) => {
+      if (!(notif.id in progressMap)) {
+        startProgress(notif);
+      }
+    });
+  },
+  { immediate: true, deep: true }
+);
+
+const remove = (id) => {
+  clearInterval(timerMap[id]);
+  delete timerMap[id];
+  delete progressMap[id];
+  delete remainingMap[id];
+  delete totalMap[id];
+  delete pausedAtMap[id];
+  notifStore.remove(id);
+};
+
+const pause = (id) => {
+  if (timerMap[id]) {
+    clearInterval(timerMap[id]);
+    timerMap[id] = null;
+    pausedAtMap[id] = Date.now();
+  }
+};
+const resume = (id) => {
+  if (!timerMap[id] && remainingMap[id] > 0) {
+    let lastUpdate = Date.now();
+    timerMap[id] = setInterval(() => {
+      const now = Date.now();
+      const elapsed = now - lastUpdate;
+      lastUpdate = now;
+      remainingMap[id] -= elapsed;
+      if (remainingMap[id] < 0) remainingMap[id] = 0;
+      progressMap[id] = (remainingMap[id] / totalMap[id]) * 100;
+      if (remainingMap[id] <= 0) {
+        clearInterval(timerMap[id]);
+        delete timerMap[id];
+        delete progressMap[id];
+        delete remainingMap[id];
+        delete totalMap[id];
+        delete pausedAtMap[id];
+        notifStore.remove(id);
+      }
+    }, TICK);
+  }
+};
+
+onUnmounted(() => {
+  Object.values(timerMap).forEach(clearInterval);
+});
+
+const alertClass = (type) =>
+  ({
+    success: "alert-success",
+    warning: "alert-warning",
+    error: "alert-danger",
+  }[type] || "alert-primary");
+
+const iconClass = (type) =>
+  ({
+    success: "bi bi-check-circle-fill text-success",
+    warning: "bi bi-exclamation-triangle-fill text-warning",
+    error: "bi bi-x-circle-fill text-danger",
+  }[type] || "bi bi-info-circle-fill text-primary");
 </script>
 
 <style scoped>

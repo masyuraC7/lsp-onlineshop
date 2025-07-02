@@ -42,54 +42,45 @@
   </div>
 </template>
 
-<script>
+<script setup>
+import { ref } from "vue";
 import axios from "axios";
 import { useUserStore } from "../stores/UserStore";
 import { useNotificationStore } from "../stores/NotificationStore";
 
-export default {
-  name: "ReviewForm",
-  props: {
-    productId: {
-      type: [String, Number],
-      required: true,
-    },
+const props = defineProps({
+  productId: {
+    type: [String, Number],
+    required: true,
   },
-  data() {
-    return {
-      rating: 0,
-      comment: "",
-    };
-  },
-  methods: {
-    clearForm() {
-      this.rating = 0;
-      this.comment = "";
-    },
-    async submit() {
-      const notif = useNotificationStore();
-      const userStore = useUserStore();
+});
+const emit = defineEmits(["submit-review"]);
 
-      try {
-        await axios.post("http://localhost:3001/api/reviews", {
-          userId: userStore.id,
-          productId: this.productId,
-          rating: this.rating,
-          comment: this.comment,
-        });
+const rating = ref(0);
+const comment = ref("");
 
-        notif.show("success", "Ulasan berhasil dikirim");
-        this.$emit("submit-review");
-        this.clearForm();
-      } catch (error) {
-        notif.show(
-          "error",
-          error.response?.data?.error || "Gagal mengirim ulasan"
-        );
-      }
-    },
-  },
-};
+function clearForm() {
+  rating.value = 0;
+  comment.value = "";
+}
+
+async function submit() {
+  const notif = useNotificationStore();
+  const userStore = useUserStore();
+  try {
+    await axios.post("http://localhost:3001/api/reviews", {
+      userId: userStore.id,
+      productId: props.productId,
+      rating: rating.value,
+      comment: comment.value,
+    });
+    notif.show("success", "Ulasan berhasil dikirim");
+    emit("submit-review");
+    clearForm();
+  } catch (error) {
+    notif.show("error", error.response?.data?.error || "Gagal mengirim ulasan");
+  }
+}
 </script>
 
 <style scoped>
