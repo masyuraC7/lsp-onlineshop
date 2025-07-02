@@ -1,6 +1,21 @@
 <template>
   <div class="card mb-4 shadow-sm">
-    <img :src="image || defaultImage" class="card-img-top" alt="{{ title }}" />
+    <div class="product-image-wrapper">
+      <img
+        v-if="image"
+        :src="getImageUrl(image)"
+        class="card-img-top product-img"
+        :alt="title"
+        loading="lazy"
+      />
+      <img
+        v-else
+        :src="defaultImage"
+        class="card-img-top product-img"
+        alt="placeholder"
+        loading="lazy"
+      />
+    </div>
 
     <div class="card-body">
       <h5 class="card-title">{{ title }}</h5>
@@ -169,4 +184,33 @@ async function handleAddToCart() {
 async function handleReviewSubmit() {
   await loadReviews();
 }
+
+function getImageUrl(img) {
+  if (!img) return defaultImage;
+  if (img.startsWith("http://") || img.startsWith("https://")) return img;
+  // Jika gambar dari upload lokal
+  return `http://localhost:3001/uploads/${img}`;
+}
 </script>
+
+<style scoped>
+.product-image-wrapper {
+  width: 100%;
+  aspect-ratio: 1.5/1;
+  background: #f8f9fa;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+.product-img {
+  max-width: 100%;
+  max-height: 180px;
+  object-fit: contain;
+  background: #fff;
+  transition: transform 0.2s;
+}
+.product-img:hover {
+  transform: scale(1.04);
+}
+</style>
