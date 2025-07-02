@@ -1,5 +1,53 @@
-# Vue 3 + Vite
+# Frontend - Online Shop
 
-This template should help get you started developing with Vue 3 in Vite. The template uses Vue 3 `<script setup>` SFCs, check out the [script setup docs](https://v3.vuejs.org/api/sfc-script-setup.html#sfc-script-setup) to learn more.
+Frontend aplikasi ini dibangun menggunakan **Vue 3** (Composition API) dan **Vite** sebagai dev server & build tool.
 
-Learn more about IDE Support for Vue in the [Vue Docs Scaling up Guide](https://vuejs.org/guide/scaling-up/tooling.html#ide-support).
+## Fitur Utama
+
+- UI responsif dan modern (Bootstrap 5)
+- Halaman customer, admin, subadmin
+- Manajemen produk, kategori, stok
+- Keranjang belanja, checkout, riwayat transaksi
+- Review produk
+- Notifikasi, konfirmasi, dan loading bar global
+- Cetak invoice (PDF)
+
+## Teknologi
+
+- [Vue 3](https://vuejs.org/) (Composition API, Pinia)
+- [Vite](https://vitejs.dev/)
+- [Bootstrap 5](https://getbootstrap.com/)
+- [Chart.js](https://www.chartjs.org/)
+- [Axios](https://axios-http.com/)
+- [html2pdf.js](https://github.com/eKoopmans/html2pdf.js)
+
+## Struktur Folder
+
+```
+onlineshop/
+├── src/
+│   ├── components/   # Komponen UI
+│   ├── pages/        # Halaman utama
+│   ├── stores/       # Pinia store
+│   ├── router/       # Routing Vue
+│   └── ...
+├── public/
+├── vite.config.js
+├── package.json
+```
+
+## Dokumentasi
+
+- [Vue 3 Documentation](https://vuejs.org/guide/introduction.html)
+- [Vite Documentation](https://vitejs.dev/guide/)
+- [Bootstrap 5 Docs](https://getbootstrap.com/docs/5.0/getting-started/introduction/)
+
+## Menjalankan Frontend
+
+```
+cd onlineshop
+npm install
+npm run dev
+```
+
+Pastikan backend sudah berjalan di port 3001 agar API dapat diakses.
